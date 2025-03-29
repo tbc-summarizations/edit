@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catfishing Chronicles: Estonia</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #game-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 700px;
+            text-align: center;
+        }
+        h1, h2 {
+            color: #5a5a5a;
+        }
+        #character-selection, #game-content, #ending-screen {
+            margin-top: 20px;
+        }
+        #story-text {
+            text-align: left;
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #e9e9e9;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+        .character-button, .choice-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 5px;
+            transition: background-color 0.3s ease;
+            display: block; /* Make buttons stack vertically */
+            width: calc(100% - 10px); /* Adjust width considering margins */
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        .character-button:hover, .choice-button:hover {
+            background-color: #0056b3;
+        }
+        .character-button.selected {
+            background-color: #28a745;
+            font-weight: bold;
+        }
+        #choices {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column; /* Stack choices vertically */
+            align-items: center; /* Center choices */
+        }
+        .char-icon {
+            display: inline-block;
+            margin-right: 8px;
+            font-size: 1.2em;
+        }
+        .thought {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #ccc;
+        }
+        blockquote {
+            margin: 15px 0;
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #007bff;
+            font-style: italic;
+            color: #555;
+        }
+        blockquote footer {
+            margin-top: 5px;
+            font-style: normal;
+            font-size: 0.9em;
+            color: #777;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>Catfishing Chronicles: Estonia</h1>
+
+        <div id="character-selection">
+            <h2>Choose Your Character</h2>
+            <p>Select a character to experience their perspective in this story about online deception.</p>
+            <button class="character-button" onclick="selectCharacter('Meethexep')">
+                <span class="char-icon">🛴</span> Meethexep (The Hopeful Victim)
+            </button>
+            <button class="character-button" onclick="selectCharacter('ChocoNiki')">
+                <span class="char-icon">🎭</span> Choco~Niki (The Catfisher)
+            </button>
+            <button class="character-button" onclick="selectCharacter('AdamMady')">
+                <span class="char-icon">🤝</span> AdamMady (The Supportive Friend)
+            </button>
+            <button class="character-button" onclick="selectCharacter('Berishbaev')">
+                <span class="char-icon">🤔</span> Berishbaev (The Skeptical Friend)
+            </button>
+            <button class="character-button" onclick="selectCharacter('HappyMan')">
+                <span class="char-icon">⚖️</span> HappyMan (The Mediator)
+            </button>
+        </div>
+
+        <div id="game-content" style="display: none;">
+            <h2 id="character-name"></h2>
+            <div id="story-text"></div>
+            <div id="choices"></div>
+        </div>
+
+        <div id="ending-screen" style="display: none;">
+            <h2>Game Over</h2>
+            <div id="ending-text"></div>
+            <button class="choice-button" onclick="restartGame()">Play Again?</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            character: null,
+            currentScene: null,
+            flags: {} // To track choices and story progression
+        };
+
+        const characters = {
+            Meethexep: { name: "Meethexep", icon: "🛴", startScene: "meeth_start" },
+            ChocoNiki: { name: "Choco~Niki", icon: "🎭", startScene: "niki_start" },
+            AdamMady: { name: "AdamMady", icon: "🤝", startScene: "adam_start" },
+            Berishbaev: { name: "Berishbaev", icon: "🤔", startScene: "beri_start" },
+            HappyMan: { name: "HappyMan", icon: "⚖️", startScene: "happy_start" }
+        };
+
+        // --- STORY DATA ---
+story = {
+            // === SHARED SCENES ===
+            shared_intro: {
+                text: (gs) => `It's a Tuesday evening in Tallinn. Rain taps gently against the window. ${gs.character === 'Meethexep' ? 'You\'re ' : 'Meethexep is '} on his computer, electric scooter parked nearby, chatting online. The glow of the monitor illuminates a hopeful expression. His friends, AdamMady, Berishbaev, and HappyMan, are also online, aware of Meethexep's growing connection with someone named Choco~Niki.`,
+                choices: [
+                    { text: "Continue", nextScene: (gs) => characters[gs.character].startScene }
+                ]
+            },
+
+            shared_friends_chat_early: {
+                text: (gs) => `Later, in a group chat without Meethexep:
+                    <br><strong>AdamMady:</strong> Guys, Meethexep seems really happy with Choco~Niki. She sounds amazing! 😊
+                    <br><strong>Berishbaev:</strong> "She"? Has anyone actually *heard* her voice? Or seen her on video? 🤨
+                    <br><strong>HappyMan:</strong> Let's give it time. Maybe she's just shy. Important thing is Meeth is happy, right? But Berishbaev has a point, caution is good. 🤔
+                    <br><strong>AdamMady:</strong> Don't be such a downer, Beri! Online relationships take time to build trust. Meeth deserves this.
+                    <br><strong>Berishbaev:</strong> Trust is earned, Adam. Not blindly given based on typed words and heart emojis. Something feels off.`,
+                choices: [
+                    { text: "Continue the story", nextScene: (gs) => gs.flags.returnScene || characters[gs.character].startScene } // Default return or go back to char start
+                ]
+            },
+
+            shared_confrontation_start: {
+                text: (gs) => `Tensions have been rising. Berishbaev has become more vocal about his suspicions regarding Choco~Niki's authenticity. Meethexep, often defended by AdamMady, seems torn but mostly dismissive. HappyMan has tried to keep the peace, but it's getting harder. Tonight, things come to a head in the group chat.
+                    <br><strong>Berishbaev:</strong> Meethexep, we need to talk seriously about Choco~Niki. I've been thinking, and there are too many inconsistencies.
+                    <br><strong>AdamMady:</strong> Here we go again... Beri, just leave it alone! You're upsetting Meeth.
+                    <br><strong>Meethexep:</strong> What inconsistencies, Berishbaev? Niki explained everything. Her webcam is broken, her mic too... bad luck, that's all. 😥
+                    <br><strong>HappyMan:</strong> Guys, let's try to discuss this calmly. Berishbaev, what specifically worries you? Meeth, try to listen with an open mind, okay? Adam, let Beri speak.`,
+                choices: [
+                    { text: "Let Berishbaev state his case.", nextScene: "shared_confrontation_beri_case" }
+                ]
+            },
+
+
+            // === MEETHEEP SCENES ===
+            meeth_path_deep_in: story.meeth_path_deep_in,
+            meeth_favors_concern: story.meeth_favors_concern,
+            meeth_path_deeper_favors: story.meeth_path_deeper_favors,
+            meeth_question_favors_gently: story.meeth_question_favors_gently,
+            meeth_reassure_favors: story.meeth_reassure_favors,
+            meeth_re_explain_concern: story.meeth_re_explain_concern,
+            meeth_insist_video: story.meeth_insist_video,
+            meeth_back_down_video: story.meeth_back_down_video,
+            meeth_explain_connection_video: story.meeth_explain_connection_video,
+            meeth_push_gently_video_reason: story.meeth_push_gently_video_reason,
+            meeth_hope_someday_soon: story.meeth_hope_someday_soon,
+            meeth_needs_moment: story.meeth_needs_moment,
+            meeth_take_break_think: story.meeth_take_break_think,
+            meeth_pm_beri_talk: story.meeth_pm_beri_talk,
+            meeth_ask_beri_suspicions: story.meeth_ask_beri_suspicions,
+            meeth_thank_beri_think: story.meeth_thank_beri_think,
+            meeth_serious_reflection: story.meeth_serious_reflection,
+            meeth_confront_niki_doubts_direct: story.meeth_confront_niki_doubts_direct,
+            meeth_wait_niki_response_confrontation: story.meeth_wait_niki_response_confrontation,
+            meeth_wait_beri_honest_opinion: story.meeth_wait_beri_honest_opinion,
+            beri_honest_opinion_meeth_response: story.beri_honest_opinion_meeth_response,
+            meeth_ask_beri_proof: story.meeth_ask_beri_proof,
+            meeth_wait_beri_proof_response: story.meeth_wait_beri_proof_response,
+            meeth_online_research_catfish: story.meeth_online_research_catfish,
+            meeth_deeper_online_research: story.meeth_deeper_online_research,
+            meeth_confront_niki_research_findings: story.meeth_confront_niki_research_findings,
+            meeth_wait_niki_response_catfish_confrontation: story.meeth_wait_niki_response_catfish_confrontation,
+            meeth_use_research_find_inconsistencies: story.meeth_use_research_find_inconsistencies,
+            meeth_continue_search_inconsistencies: story.meeth_continue_search_inconsistencies,
+            meeth_stop_research_overwhelmed: story.meeth_stop_research_overwhelmed,
+            meeth_continue_denial_after_research: story.meeth_continue_denial_after_research,
+            meeth_resume_research_truth: story.meeth_resume_research_truth,
+            meeth_talk_happy_research_advice: story.meeth_talk_happy_research_advice,
+            meeth_ask_happy_advice_research_findings: story.meeth_ask_happy_advice_research_findings,
+            meeth_follow_happy_advice_research_action: story.meeth_follow_happy_advice_research_action,
+            meeth_action_based_on_happy_advice_continues: story.meeth_action_based_on_happy_advice_continues,
+            meeth_delay_action_think_more: story.meeth_delay_action_think_more,
+            meeth_decide_take_action_limbo: story.meeth_decide_take_action_limbo,
+            meeth_passive_delay_limbo: story.meeth_passive_delay_limbo,
+            meeth_talk_happy_again_advice: story.meeth_talk_happy_again_advice,
+            meeth_ask_happy_mediate_group_chat: story.meeth_ask_happy_mediate_group_chat,
+            meeth_communicate_doubts_calmly_niki: story.meeth_communicate_doubts_calmly_niki,
+            meeth_wait_niki_response_calm_doubts: story.meeth_wait_niki_response_calm_doubts,
+            meeth_stubborn_defense: story.meeth_stubborn_defense,
+            meeth_deeper_denial_path: story.meeth_deeper_denial_path,
+            meeth_admit_doubts_beri_opinion: story.meeth_admit_doubts_beri_opinion,
+            meeth_wait_beri_honest_opinion: story.meeth_wait_beri_honest_opinion,
+            meeth_ask_beri_proof: story.meeth_ask_beri_proof,
+            meeth_wait_beri_proof_response: story.meeth_wait_beri_proof_response,
+
+
+            // === CHOCO~NIKI SCENES ===
+
+            // === ADAMMADY SCENES ===
+            adam_wait_meeth_gentle_check_response: {
+                text: (gs) => `Meethexep replies, maybe a little too quickly: "Hey Adam! Yeah, yeah! All good! Really good! 😊 Niki is amazing! Why do you ask? Just checking in?"
+                    <div class="thought">He sounds a bit...defensive? Maybe I'm just imagining it. Still, 'why do you ask?' is a bit of a weird reaction to a friendly check-in.</div>`,
+                choices: [
+                    { text: "Reassure him you were just checking in.", nextScene: "adam_reassure_just_checking" },
+                    { text: "Press gently, 'Just seems like Berishbaev is getting to him.'", nextScene: "adam_press_beri_getting_to_him" }
+                ]
+            },
+            adam_reassure_just_checking: {
+                text: (gs) => `You reply quickly: "Oh, just checking in, dude! You know me, always making sure my friends are happy! 😊 Glad to hear it's going great! You guys are awesome!"
+                    <br>Meethexep replies with a relieved emoji and changes the subject. You push the slight unease aside.
+                    <div class="thought">Probably just being paranoid. Meeth is happy, that's what matters.</div>`,
+                choices: [
+                    { text: "Continue to be supportive.", nextScene: "adam_further_support" }
+                ]
+            },
+            adam_press_beri_getting_to_him: {
+                text: (gs) => `You reply, trying to sound casual but probing: "Just seems like Berishbaev is getting to you a bit with all his skepticism, haha. You're not letting him get to you, are you? Niki is clearly great, no need to doubt that!"
+                    <br>Meethexep's reply is a bit slower this time. "Nah, Beri is just... Beri. Lol. I'm good. Really. Just busy chatting with Niki! 😉 Talk later?"
+                    <div class="thought">Hmm, 'Beri is just Beri' sounds dismissive, but 'just busy chatting with Niki' also feels like he's avoiding the topic. Maybe Berishbaev *is* getting to him more than he admits?</div>`,
+                choices: [
+                    { text: "Let it go for now, but keep an eye on Meethexep.", nextScene: "adam_later_watchful" },
+                    { text: "Casually ask if Meeth wants to hang out, away from online stuff.", nextScene: "adam_ask_hangout_offline" }
+                ]
+            },
+            adam_later_watchful: {
+                text: (gs) => `You decide to back off for now, but you remain a bit more watchful of Meethexep's mood and mentions of Niki. You still want to be supportive, but Berishbaev's skepticism and Meethexep's slightly odd reaction to your check-in have planted a tiny seed of unease in your mind.`,
+                choices: [
+                    { text: "Continue to observe, but lean towards support.", nextScene: "adam_status_quo_slightly_watchful" }
+                ]
+            },
+            adam_status_quo_slightly_watchful: {
+                text: (gs) => `You maintain your generally supportive stance towards Meethexep and Niki, but with a slightly more watchful eye. You're still mostly dismissing Berishbaev's concerns, but you're also a little more attuned to any subtle signs that Meethexep might not be as completely happy and secure as he portrays.`,
+                choices: [
+                    { text: "Time passes, towards potential confrontation...", nextScene: "shared_confrontation_start" }
+                ]
+            },
+            adam_ask_hangout_offline: {
+                text: (gs) => `You reply: "Cool, Meeth! Just thought maybe we could grab a coffee or something offline sometime soon? Catch up properly, away from all the online chatter? 😊"
+                    <br>Meethexep's response is quick and positive: "Yeah, man, sounds good! Let's do it! Maybe later this week? Gotta check my schedule."
+                    <div class="thought">He's keen to hang out offline. That's a good sign, right? Maybe he just needs some real-world connection to balance out the online stuff.</div>`,
+                choices: [
+                    { text: "Arrange a hangout with Meethexep.", nextScene: "adam_arrange_meeth_hangout" }
+                ]
+            },
+            adam_arrange_meeth_hangout: {
+                text: (gs) => `You and Meethexep make plans to meet up for coffee later in the week. You're looking forward to catching up with him in person and seeing how he really seems, away from the online world and the group chat dynamics. You hope a face-to-face conversation will give you a better sense of how he's doing.`,
+                choices: [
+                    { text: "Look forward to the hangout.", nextScene: "adam_wait_for_hangout" }
+                ]
+            },
+            adam_wait_for_hangout: {
+                text: (gs) => `You wait for the day of your hangout with Meethexep, continuing to chat online in the meantime, mostly keeping things light and supportive. You're curious to see if he mentions Niki during your offline meetup and how he talks about her in person. You hope to get a clearer picture of his relationship and well-being.`,
+                choices: [
+                    { text: "The day of the hangout arrives...", nextScene: "adam_hangout_starts" }
+                ]
+            },
+            adam_hangout_starts: {
+                text: (gs) => `You meet Meethexep at a cafe in Tallinn. He seems happy to see you, but maybe a little preoccupied. He's checking his phone fairly often. When you ask how things are going, he immediately mentions Niki, his face lighting up. He talks about her enthusiastically, sharing details about their online chats and 'movie nights'. He seems genuinely smitten.`,
+                choices: [
+                    { text: "Enthusiastically encourage his happiness.", nextScene: "adam_hangout_encourage_happy" },
+                    { text: "Gently probe about the 'no voice/video' thing.", nextScene: "adam_hangout_probe_no_video" }
+                ]
+            },
+            adam_hangout_encourage_happy: {
+                text: (gs) => `You respond with genuine enthusiasm, mirroring his happiness. "That's awesome, Meeth! She sounds amazing! Really happy for you, man! You deserve to be happy!" You focus on reinforcing his positive feelings and avoiding anything that could sound skeptical or negative. Meethexep beams, clearly pleased by your support.
+                    <div class="thought">See? He's genuinely happy. Berishbaev is just wrong.</div>`,
+                choices: [
+                    { text: "Continue to be supportive and positive.", nextScene: "adam_hangout_positive_support_continues" }
+                ]
+            },
+            adam_hangout_positive_support_continues: {
+                text: (gs) => `You spend the rest of the hangout being enthusiastically supportive of Meethexep and his relationship with Niki. You ask positive questions, express your excitement for him, and completely dismiss any lingering doubts you might have had. Meethexep leaves the hangout feeling validated and even happier. You feel good for being a supportive friend.`,
+                choices: [
+                    { text: "Continue to be the supportive friend.", nextScene: "adam_further_support" }
+                ]
+            },
+            adam_hangout_probe_no_video: {
+                text: (gs) => `You decide to gently probe about the one slightly unusual thing. "She sounds really cool, Meeth. It's just... you guys have been chatting for a while now, right? Still just texting? No voice or video yet?" You try to sound casual and curious, not accusatory.
+                    <br>Meethexep's smile falters slightly. "Yeah, still just texting. She's... not really a video call person, you know? Tech issues and stuff. But it's cool, we connect really well through text!" He tries to sound convincing, but you notice a flicker of defensiveness in his eyes.
+                    <div class="thought">He seems a bit touchy about the video thing. Maybe it *is* a bit odd...</div>`,
+                choices: [
+                    { text: "Drop it, reassure him it's okay.", nextScene: "adam_hangout_drop_it_reassure" },
+                    { text: "Press a little more gently, 'Just curious, is she shy or something?'", nextScene: "adam_hangout_press_shy_question" }
+                ]
+            },
+            adam_hangout_drop_it_reassure: {
+                text: (gs) => `You quickly backpedal, wanting to reassure him. "Hey, no worries at all, man! Texting is great! If you guys connect, that's all that matters! Didn't mean anything by it, just curious! You guys are awesome!" You immediately shift back to positive support, hoping you didn't make him uncomfortable. Meethexep visibly relaxes, relieved you dropped the topic.
+                    <div class="thought">Okay, definitely a sensitive subject. Best to just be supportive and not push it.</div>`,
+                choices: [
+                    { text: "Continue to be supportive and drop the video issue.", nextScene: "adam_hangout_positive_support_continues" }
+                ]
+            },
+            adam_hangout_press_shy_question: {
+                text: (gs) => `You try to probe a little further, but still gently. "Yeah, texting is cool, totally get it. Just wondering if she's maybe just shy about video calls or something? Some people are, you know?" You try to frame it as understanding and normal, not suspicious.
+                    <br>Meethexep becomes more visibly uncomfortable. "She's... yeah, kinda shy, I guess. And tech issues, like I said. It's complicated, okay? Can we just... talk about something else? Like, did you see that football match last night?" He quickly changes the subject, his earlier enthusiasm dimmed.
+                    <div class="thought">Definitely touchy. 'Complicated'? 'Change the subject'?  He's avoiding it big time. Maybe Berishbaev *does* have a point...</div>`,
+                choices: [
+                    { text: "Change the subject, respecting his discomfort.", nextScene: "adam_hangout_change_subject_respect" },
+                    { text: "Gently persist, 'Just want to make sure you're not getting catfished, dude.'", nextScene: "adam_hangout_persist_catfish_concern" }
+                ]
+            },
+            adam_hangout_change_subject_respect: {
+                text: (gs) => `You immediately respect his discomfort and change the subject to football, as he suggested. You spend the rest of the hangout talking about other things, avoiding any further mention of Niki or video calls. You want to be a good friend and not push him if he's not ready to talk about it. But a seed of doubt has been planted in your own mind.
+                    <div class="thought">He really didn't want to talk about it. 'Complicated'? 'Shy'?  Something feels a bit off now...</div>`,
+                choices: [
+                    { text: "Continue as a supportive friend, but with lingering doubt.", nextScene: "adam_later_doubt_lingers" }
+                ]
+            },
+            adam_later_doubt_lingers: {
+                text: (gs) => `The hangout is over, but the conversation about Niki and the video calls lingers in your mind. Meethexep's discomfort and evasiveness were noticeable. You can't completely shake off the feeling that something might be wrong, that Berishbaev's skepticism might have some merit after all. The blind faith is cracking slightly.`,
+                choices: [
+                    { text: "Continue to support Meethexep, but with a quiet doubt.", nextScene: "adam_status_quo_doubtful" },
+                    { text: "Maybe talk to HappyMan about your slight unease?", nextScene: "adam_talk_happy_unease" }
+                ]
+            },
+            adam_status_quo_doubtful: {
+                text: (gs) => `You try to maintain your supportive facade towards Meethexep and Niki, but a quiet doubt now simmers beneath the surface. You're no longer completely dismissing Berishbaev's concerns, and you find yourself paying closer attention to any mentions of Niki, looking for subtle clues or inconsistencies. The unwavering support has become slightly strained.`,
+                choices: [
+                    { text: "Time passes, towards potential confrontation, doubt in tow...", nextScene: "shared_confrontation_start" }
+                ]
+            },
+            adam_talk_happy_unease: {
+                text: (gs) => `You decide to reach out to HappyMan privately. "Hey HappyMan, you got a sec? Wanted to ask your opinion on something. It's about Meeth and Niki... and Berishbaev's skepticism. After hanging out with Meeth today, I'm starting to wonder if maybe Beri has a point about the no video/voice thing. Meeth got really weird when I gently asked about it." You confide in HappyMan, seeking his balanced perspective and hoping to get some clarity on your growing unease.`,
+                choices: [
+                    { text: "Wait for HappyMan's response to your message.", nextScene: "adam_wait_happy_unease_response" }
+                ]
+            },
+            adam_wait_happy_unease_response: {
+                text: (gs) => `You've messaged HappyMan, sharing your unease about Meethexep and Niki and seeking his perspective. Now, you wait for his reply, hoping he can offer some balanced advice or insight into the situation. Will he confirm your growing doubts? Will he offer a different interpretation? Or will he try to reassure you that everything is probably fine? HappyMan's response might significantly influence your next steps.`,
+                choices: [
+                    { text: "See HappyMan's response to your message about your unease.", nextScene: "happy_reaction_to_adam_unease_pm" } // Scene for HappyMan's response (needs to be created)
+                ]
+            },
+            adam_hangout_persist_catfish_concern: {
+                text: (gs) => `Ignoring his discomfort, you press a little harder, driven by your growing worry. "Meeth, seriously dude, I'm just saying... you know about catfishing, right? Just want to make sure you're not getting played, that's all. It's been weeks, no voice, no video... just seems a *tiny* bit sus, you know?" You finally voice the direct concern, hoping to shake him out of any potential denial.
+                    <br>Meethexep's reaction is immediate and hurt. "Adam! Seriously?! You too now? You think Niki is lying to me? After everything I've told you about how great she is? I can't believe you'd say that! I thought you were happy for me! Maybe you're just jealous or something!" He's clearly deeply offended and hurt by your direct question. He might even get up and leave the cafe abruptly.
+                    <div class="thought">Whoa. That backfired. Badly. He's really upset. Did I just ruin everything?</div>`,
+                choices: [
+                    { text: "Immediately apologize and back down.", nextScene: "adam_apologize_back_down_damage_control" },
+                    { text: "Try to explain you're just concerned, not accusing.", nextScene: "adam_explain_concern_not_accusing" }
+                ]
+            },
+            adam_apologize_back_down_damage_control: {
+                text: (gs) => `You immediately panic and rush to apologize, trying to repair the damage. "Meeth, dude, I'm SO sorry! I didn't mean to upset you! Seriously! I just... I'm just a bit overprotective sometimes, you know? Forget I said anything! Niki is amazing, I know she is! You guys are great! Please don't be mad at me!" You desperately try to backtrack and reassure him, hoping to salvage the friendship and undo the harm you've caused. Meethexep is still visibly upset, but perhaps slightly mollified by your profuse apology.`,
+                choices: [
+                    { text: "Continue apologizing and trying to smooth things over.", nextScene: "adam_continue_apologize_smooth_over" }
+                ]
+            },
+            adam_continue_apologize_smooth_over: {
+                text: (gs) => `You keep apologizing profusely and showering Meethexep with reassurance, desperately trying to smooth things over and undo the damage from your blunt question. You emphasize your support for him and Niki, downplaying your concerns as just 'overprotective friend' syndrome. Slowly, Meethexep starts to calm down, accepting your apologies, but the earlier easygoing atmosphere is gone. A strain has been introduced into your friendship.`,
+                choices: [
+                    { text: "Hope you've managed to repair most of the damage.", nextScene: "adam_damage_partially_repaired" }
+                ]
+            },
+            adam_damage_partially_repaired: {
+                text: (gs) => `You manage to partially repair the damage from your blunt question, but the hangout ends on a slightly awkward note. Meethexep accepts your apology, but the earlier easygoing vibe is gone, replaced by a subtle tension. You've reaffirmed your support for him and Niki, but you're also aware that you've planted a seed of doubt and potentially strained your friendship.`,
+                choices: [
+                    { text: "Continue to be supportive, but more cautiously.", nextScene: "adam_support_more_cautiously" }
+                ]
+            },
+            adam_support_more_cautiously: {
+                text: (gs) => `You decide to continue being supportive of Meethexep and Niki, but you'll be much more cautious about voicing any doubts or concerns in the future. You've learned a hard lesson about pushing too hard and potentially damaging your friendship. You'll try to be a positive influence without being overtly skeptical, even if your own quiet doubts still linger.`,
+                choices: [
+                    { text: "Continue cautiously supportive.", nextScene: "adam_status_quo_cautious_support" }
+                ]
+            },
+            adam_status_quo_cautious_support: {
+                text: (gs) => `You settle into a pattern of cautious support. You remain outwardly positive about Meethexep and Niki's relationship, but you keep your more skeptical thoughts to yourself. You're still there for Meethexep as a friend, but the earlier blind faith has been replaced by a more guarded approach. You're walking a tighter line, trying to balance support with a lingering unease.`,
+                choices: [
+                    { text: "Time passes, towards potential confrontation, with you walking a cautious line...", nextScene: "shared_confrontation_start" }
+                ]
+            },
+            adam_explain_concern_not_accusing: {
+                text: (gs) => `You try to backtrack, explaining you were just concerned, not accusing. "Meeth, wait, hold on! I'm not saying she's lying! Seriously! Just... online dating can be weird, you know? Catfishing is a thing! I just wanted to make sure you're being careful, that's all! As your friend! Not accusing Niki of anything!" You try to soften the blow and explain your good intentions, hoping to defuse his anger. Meethexep pauses, considering your words, his anger slightly lessened but still present.`,
+                choices: [
+                    { text: "Continue to explain and reassure.", nextScene: "adam_continue_explain_reassure" }
+                ]
+            },
+            adam_continue_explain_reassure: {
+                text: (gs) => `You keep explaining, trying to reassure Meethexep that you're not accusing Niki, just expressing concern as a friend. You emphasize your care for him and your desire to protect him from potential harm, while still trying to maintain a supportive stance towards his relationship. You're attempting a delicate balancing act, trying to voice a concern without completely alienating him. Meethexep listens, his expression softening slightly, but still guarded.`,
+                choices: [
+                    { text: "Hope you've managed to soften the blow and open a dialogue.", nextScene: "adam_dialogue_slightly_opened" }
+                ]
+            },
+            adam_dialogue_slightly_opened: {
+                text: (gs) => `You manage to slightly soften the blow of your direct question and open a tentative dialogue with Meethexep. He's still hurt and defensive, but he's at least listening to your explanation that you were just concerned, not accusing Niki. The tension has eased a little, but the atmosphere remains delicate. You have a chance to steer the conversation towards a more open discussion, but it's still risky.`,
+                choices: [
+                    { text: "Gently try to explain Berishbaev's concerns too.", nextScene: "adam_explain_beri_concerns_gently" },
+                    { text: "Shift back to being fully supportive and drop the concern.", nextScene: "adam_shift_back_full_support" }
+                ]
+            },
+            adam_explain_beri_concerns_gently: {
+                text: (gs) => `Carefully, you try to bring up Berishbaev's concerns, framing them as coming from a place of friendship too. "Meeth, it's not just me, you know? Berishbaev is worried too. He's just... maybe a bit blunt about it, but he's also just looking out for you, man. We all are. It's just the voice/video thing... it's a bit unusual, right? Even Niki admits she has 'tech issues'." You try to present Berishbaev's skepticism as shared concern from multiple friends, not just your own suspicion. Meethexep listens, his expression thoughtful, but still hesitant.
+                    <div class="thought">This is risky. But maybe if he sees it's not just 'negative Beri' but a shared concern...</div>`,
+                choices: [
+                    { text: "Wait for Meethexep's reaction to mentioning Berishbaev.", nextScene: "adam_wait_meeth_beri_mention_response" }
+                ]
+            },
+            adam_wait_meeth_beri_mention_response: {
+                text: (gs) => `You've mentioned Berishbaev and framed his concerns as shared by multiple friends, hoping to make Meethexep see it as a wider issue of friendship and concern, not just personal suspicion. Now, you wait for his reaction. Will he be more receptive to the idea that it's not just 'negative Beri' but a genuine worry from his friends? Will he start to consider Berishbaev's points more seriously? Or will he shut down completely, seeing it as a coordinated attack? His response will determine the direction of this delicate conversation.`,
+                choices: [
+                    { text: "See Meethexep's reaction to mentioning Berishbaev's concerns.", nextScene: "meeth_reaction_to_adam_beri_mention" } // Scene for Meethexep's reaction (needs to be created)
+                ]
+            },
+            adam_shift_back_full_support: {
+                text: (gs) => `Deciding it's too risky to push further, you abruptly shift back to being fully supportive and drop the concern about video/voice and Berishbaev's skepticism entirely. "Anyway, forget all that! Sorry I even brought it up! You and Niki sound amazing together, that's all that matters! Seriously, I'm just happy you're happy! Let's talk about something fun! How's that scooter doing?" You completely backtrack, hoping to erase the awkwardness and return to the safe territory of enthusiastic support. Meethexep, though perhaps still slightly wary, seems relieved to change the subject.`,
+                choices: [
+                    { text: "Focus on being fully supportive and positive.", nextScene: "adam_full_support_no_more_doubts" }
+                ]
+            },
+            adam_full_support_no_more_doubts: {
+                text: (gs) => `You fully commit to being wholeheartedly supportive of Meethexep and Niki, burying any doubts or concerns you might have had. You consciously decide to trust Meethexep's judgment and prioritize his happiness above all else. You become the unwavering cheerleader of their relationship, dismissing any further red flags or skeptical comments from others.`,
+                choices: [
+                    { text: "Continue as the unwavering supporter.", nextScene: "adam_further_support" }
+                ]
+            },
+
+            // === BERISHBAEV SCENES ===
+            beri_ending_justify: story.beri_ending_justify,
+            beri_ask_voice: story.beri_ask_voice,
+            beri_wait_group_voice_question_response: story.beri_wait_group_voice_question_response,
+            beri_group_reaction_to_beri_voice_question: story.beri_group_reaction_to_beri_voice_question,
+            beri_analyze_group_voice_response: story.beri_analyze_group_voice_response,
+            beri_decide_action_voice_response: story.beri_decide_action_voice_response,
+            beri_action_voice_response_continues: story.beri_action_voice_response_continues,
+            beri_observe_early: story.beri_observe_early,
+            beri_continue_observing: story.beri_continue_observing,
+            beri_consider_direct_intervention: story.beri_consider_direct_intervention,
+            beri_decide_direct_intervention_method: story.beri_decide_direct_intervention_method,
+            beri_confront_meeth_private: story.beri_confront_meeth_private,
+            beri_initiate_private_meeth_confrontation: story.beri_initiate_private_meeth_confrontation,
+            meeth_reaction_to_beri_private_confrontation: story.meeth_reaction_to_beri_private_confrontation,
+            beri_raise_concerns_group_chat_forcefully: story.beri_raise_concerns_group_chat_forcefully,
+            beri_raise_concerns_forcefully_group: story.beri_raise_concerns_forcefully_group,
+            beri_group_reaction_to_beri_forceful_concerns: story.beri_group_reaction_to_beri_forceful_concerns,
+            beri_analyze_group_forceful_response: story.beri_analyze_group_forceful_response,
+            beri_decide_action_forceful_response: story.beri_decide_action_forceful_response,
+            beri_action_forceful_response_continues: story.beri_action_forceful_response_continues,
+            beri_gather_more_evidence: story.beri_gather_more_evidence,
+            beri_start_gathering_evidence_process: story.beri_start_gathering_evidence_process,
+            beri_evidence_gathering_continues: story.beri_evidence_gathering_continues,
+            beri_evaluate_evidence_decide_next: story.beri_evaluate_evidence_decide_next,
+            beri_decide_action_evidence_evaluation: story.beri_decide_action_evidence_evaluation,
+            beri_action_evidence_evaluation_continues: story.beri_action_evidence_evaluation_continues,
+            beri_pm_happy: story.beri_pm_happy,
+
+
+            happy_wait_meeth_pm_response: story.happy_wait_meeth_pm_response,
+            meeth_reaction_to_happy_pm: story.meeth_reaction_to_happy_pm,
+            happy_observe_early: story.happy_observe_early,
+            happy_continue_observing_group: story.happy_continue_observing_group,
+            happy_consider_intervention: story.happy_consider_intervention,
+            happy_decide_intervention_method: story.happy_decide_intervention_method,
+            happy_mediate_adam_beri_directly: story.happy_mediate_adam_beri_directly,
+            happy_attempt_mediate_adam_beri: story.happy_attempt_mediate_adam_beri,
+            happy_group_reaction_to_happy_mediation_adam_beri: story.happy_group_reaction_to_happy_mediation_adam_beri,
+            happy_analyze_group_mediation_response: story.happy_analyze_group_mediation_response,
+            happy_decide_action_mediation_response: story.happy_decide_action_mediation_response,
+            happy_action_mediation_response_continues: story.happy_action_mediation_response_continues,
+            happy_address_meeth_situation_directly: story.happy_address_meeth_situation_directly,
+            happy_address_meeth_situation_group: story.happy_address_meeth_situation_group,
+            happy_group_reaction_to_happy_meeth_address: story.happy_group_reaction_to_happy_meeth_address,
+            happy_analyze_group_meeth_address_response: story.happy_analyze_group_meeth_address_response,
+            happy_decide_action_meeth_address_response: story.happy_decide_action_meeth_address_response,
+            happy_action_meeth_address_response_continues: story.happy_action_meeth_address_response_continues,
+            happy_deescalate_general_message: story.happy_deescalate_general_message,
+            happy_send_general_deescalation_message: story.happy_send_general_deescalation_message,
+            happy_group_reaction_to_happy_deescalation: story.happy_group_reaction_to_happy_deescalation,
+            happy_analyze_group_deescalation_response: story.happy_analyze_group_deescalation_response,
+            happy_decide_action_deescalation_response: story.happy_decide_action_deescalation_response,
+            happy_action_deescalation_response_continues: story.happy_action_deescalation_response_continues,
+
+
+            // === ENDINGS ===
+
+            // Choco~Niki Endings
+            // AdamMady Endings
+            // Berishbaev Endings
+            // HappyMan Endings
+            // === SHARED ENDING SCENES ===
+
+
+            // === MEETHEEP SCENES ENDINGS ===
+            meeth_pm_beri_talk: story.meeth_pm_beri_talk,
+            meeth_ask_beri_suspicions: story.meeth_ask_beri_suspicions,
+            meeth_resume_research_truth: story.meeth_resume_research_truth,
+            meeth_talk_happy_research_advice: story.meeth_talk_happy_research_advice,
+
+
+            // === CHOCO~NIKI SCENES ENDINGS ===
+
+             adam_reassure_just_checking: story.adam_reassure_just_checking,
+             adam_press_beri_getting_to_him: story.adam_press_beri_getting_to_him,
+             adam_hangout_starts: story.adam_hangout_starts,
+             adam_hangout_change_subject_respect: story.adam_hangout_change_subject_respect,
+             happy_reaction_to_adam_unease_pm: story.happy_reaction_to_happy_unease_pm, // Corrected scene name
+             adam_explain_concern_not_accusing: story.adam_explain_concern_not_accusing,
+             meeth_reaction_to_adam_beri_mention: story.meeth_reaction_to_adam_beri_mention, // Corrected scene name
+             adam_confront_response: story.adam_confront_response,
+             adam_reaction_to_question: story.adam_reaction_to_question,
+             adam_ending_outrage: story.adam_ending_outrage,
+             adam_ending_defend_niki: story.adam_ending_defend_niki,
+             adam_ending_support_meeth: story.adam_ending_support_meeth,
+             adam_wait_meeth_push_response: {
+                text: (gs) => `You've sent a slightly more direct message to Meethexep, expressing concern for his happiness and safety. Now, you wait for his reaction. Will he appreciate your concern and open up? Will he become defensive or dismissive again? Or will he reveal something that confirms your growing unease? His response will guide your next action.`,
+                choices: [
+                    { text: "See Meethexep's response to your slightly more direct message.", nextScene: "meeth_reaction_to_adam_push_safe" } // Placeholder for Meeth's response scene
+                ]
+             },
+
+
+            // === BERISHBAEV SCENES ENDINGS ===
+
+
+            // === HAPPYMAN SCENES ENDINGS ===
+
+
+        };
+
+
+        // --- GAME LOGIC ---
+        function $(selector) {
+            return document.querySelector(selector);
+        }
+
+        function selectCharacter(charKey) {
+            gameState.character = charKey;
+            gameState.currentScene = characters[charKey].startScene;
+            gameState.flags = {}; // Reset flags
+
+            $("#character-selection").style.display = 'none';
+            $("#game-content").style.display = 'block';
+            $("#ending-screen").style.display = 'none';
+            $("#character-name").innerHTML = `<span class="char-icon">${characters[charKey].icon}</span> Playing as ${characters[charKey].name}`;
+
+            displayScene(gameState.currentScene);
+            // Highlight selected button (optional visual feedback)
+            document.querySelectorAll('.character-button').forEach(btn => {
+                if(btn.textContent.includes(characters[charKey].name)) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        function displayScene(sceneId) {
+            if (sceneId === "END") {
+                // Should be handled by choices leading to ending scenes
+                console.error("Reached END scene directly");
+                return;
+            }
+
+            const scene = story[sceneId];
+            if (!scene) {
+                console.error(`Scene not found: ${sceneId}`);
+                 $("#story-text").innerHTML = `Error: Scene "${sceneId}" not found. Please restart.`;
+                 $("#choices").innerHTML = '';
+                return;
+            }
+
+            // Update story text - check if it's a function
+             const textContent = typeof scene.text === 'function' ? scene.text(gameState) : scene.text;
+             $("#story-text").innerHTML = textContent;
+
+            // Update choices
+            const choicesContainer = $("#choices");
+            choicesContainer.innerHTML = ''; // Clear old choices
+
+            if (scene.choices && scene.choices.length > 0) {
+                scene.choices.forEach((choice, index) => {
+                    // Check condition if it exists
+                    if (choice.condition && !choice.condition(gameState)) {
+                        return; // Skip this choice if condition not met
+                    }
+
+                    const button = document.createElement('button');
+                    button.classList.add('choice-button');
+                    button.textContent = choice.text;
+                    button.onclick = () => makeChoice(choice);
+                    choicesContainer.appendChild(button);
+                });
+            } else if (!story[scene.nextScene]) { // Check if it leads to an ending defined directly
+                 console.warn(`Scene ${sceneId} has no choices and no nextScene defined.`);
+                 // Maybe add a default "Continue?" if appropriate, or assume it's an ending point.
+            }
+        }
+
+        function makeChoice(choice) {
+             // Apply flags if any
+             if (choice.setFlag) {
+                for (const flag in choice.setFlag) {
+                    gameState.flags[flag] = choice.setFlag[flag];
+                }
+             }
+
+             // Determine next scene
+             let nextSceneId = null;
+             if (typeof choice.nextScene === 'function') {
+                 nextSceneId = choice.nextScene(gameState);
+             } else {
+                 nextSceneId = choice.nextScene;
+             }
+
+
+            if (nextSceneId && story[nextSceneId] && story[nextSceneId].choices && story[nextSceneId].choices.length === 1 && story[nextSceneId].choices[0].text === "The End.") {
+                 // This is an ending scene
+                 displayEnding(nextSceneId);
+            } else if (nextSceneId === "END") {
+                 // Allow direct END transition for simplicity in some cases
+                 $("#game-content").style.display = 'none';
+                 $("#ending-screen").style.display = 'block';
+                 $("#ending-text").innerHTML = "The story concludes here based on your choices."; // Generic end
+            }
+             else if (nextSceneId) {
+                 gameState.currentScene = nextSceneId;
+                 displayScene(gameState.currentScene);
+             } else {
+                 console.error("Choice leads nowhere:", choice);
+                 $("#story-text").innerHTML += "<br><br><i>Error: This choice path is incomplete.</i>";
+             }
+        }
+
+        function displayEnding(sceneId) {
+             const scene = story[sceneId];
+             const endingContent = typeof scene.text === 'function' ? scene.text(gameState) : scene.text;
+
+             $("#game-content").style.display = 'none';
+             $("#ending-screen").style.display = 'block';
+             $("#ending-text").innerHTML = endingContent;
+        }
+
+
+        function restartGame() {
+            gameState = { character: null, currentScene: null, flags: {} };
+            $("#character-selection").style.display = 'block';
+            $("#game-content").style.display = 'none';
+            $("#ending-screen").style.display = 'none';
+             document.querySelectorAll('.character-button').forEach(btn => btn.classList.remove('selected'));
+        }
+
+        // Initial setup - Show character selection
+        $("#character-selection").style.display = 'block';
+        $("#game-content").style.display = 'none';
+        $("#ending-screen").style.display = 'none';
+
+        // --- INITIAL GAME START SCENE ---
+        gameState.currentScene = "shared_intro"; // Start with the shared intro scene
+        displayScene(gameState.currentScene);
+
+    </script>
+
+</body>
+</html>
