@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GeoDash Clone</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        canvas {
+            border: 1px solid white;
+            background: linear-gradient(to bottom, #4a90e2, #1e3c72); /* Sky gradient */
+            display: block; /* Remove extra space below canvas */
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            text-align: center;
+            text-shadow: 3px 3px 6px #000;
+            display: none; /* Hidden initially */
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">Score: <span id="score">0</span></div>
+    <div id="message">Click or Press Space to Start</div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const messageElement = document.getElementById('message');
+
+        // Game constants
+        const GRAVITY = 0.6;
+        const JUMP_FORCE = -12; // Negative because y increases downwards
+        const PLAYER_SIZE = 30;
+        const GROUND_HEIGHT = 50;
+        const GAME_SPEED_START = 5;
+        const GAME_SPEED_INCREMENT = 0.001;
+        const OBSTACLE_MIN_GAP = 200;
+        const OBSTACLE_MAX_GAP = 400;
+        const OBSTACLE_MIN_HEIGHT = 30;
+        const OBSTACLE_MAX_HEIGHT = 100;
+        const OBSTACLE_WIDTH = 40;
+
+        // Game variables
+        let playerX, playerY, playerVelY;
+        let obstacles = [];
+        let score = 0;
+        let gameSpeed;
+        let frameCount = 0;
+        let nextObstacleFrame;
+        let gameState = 'start'; // 'start', 'playing', 'gameOver'
+
+        function resetGame() {
+            playerX = 100;
+            playerY = canvas.height - GROUND_HEIGHT - PLAYER_SIZE;
+            playerVelY = 0;
+            obstacles = [];
+            score = 0;
+            gameSpeed = GAME_SPEED_START;
+            frameCount = 0;
+            nextObstacleFrame = 0; // Generate first obstacle immediately
+            scoreElement.textContent = score;
+            messageElement.style.display = 'block';
+            messageElement.textContent = 'Click or Press Space to Start';
+            gameState = 'start';
+        }
+
+        function startGame() {
+            if (gameState !== 'playing') {
+                resetGame();
+                gameState = 'playing';
+                messageElement.style.display = 'none';
+                gameLoop(); // Start the game loop
+            }
+        }
+
+        function jump() {
+            // Only allow jumping if the player is on the ground
+            if (gameState === 'playing' && playerY >= canvas.height - GROUND_HEIGHT - PLAYER_SIZE - 1 /* small tolerance */) {
+                playerVelY = JUMP_FORCE;
+            }
+        }
+
+        function addObstacle() {
+            const height = Math.random() * (OBSTACLE_MAX_HEIGHT - OBSTACLE_MIN_HEIGHT) + OBSTACLE_MIN_HEIGHT;
+            const obstacleTypes = ['square', 'triangle', 'ship', 'ball', 'ufo', 'wave']; // Added new types
+            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)]; // Randomly choose type
+            obstacles.push({
+                x: canvas.width,
+                y: canvas.height - GROUND_HEIGHT - height,
+                width: OBSTACLE_WIDTH,
+                height: height,
+                type: type,
+                passed: false // To track score
+            });
+
+            // Schedule the next obstacle
+            const gap = Math.random() * (OBSTACLE_MAX_GAP - OBSTACLE_MIN_GAP) + OBSTACLE_MIN_GAP;
+            // Calculate frames based on distance and speed
+            nextObstacleFrame = frameCount + Math.floor(gap / gameSpeed);
+        }
+
+        function update() {
+            if (gameState !== 'playing') return;
+
+            frameCount++;
+            gameSpeed += GAME_SPEED_INCREMENT;
+
+            // --- Player Update ---
+            playerVelY += GRAVITY;
+            playerY += playerVelY;
+
+            // Ground collision
+            if (playerY > canvas.height - GROUND_HEIGHT - PLAYER_SIZE) {
+                playerY = canvas.height - GROUND_HEIGHT - PLAYER_SIZE;
+                playerVelY = 0;
+            }
+
+             // Ceiling collision (prevent going off top)
+             if (playerY < 0) {
+                playerY = 0;
+                playerVelY = 0; // Stop upward movement if hit ceiling
+            }
+
+
+            // --- Obstacle Update ---
+            // Add new obstacles
+            if (frameCount >= nextObstacleFrame) {
+                addObstacle();
+            }
+
+            // Move and check obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.x -= gameSpeed;
+
+                // Check for collision
+                // Simple AABB collision detection
+                if (
+                    playerX < obs.x + obs.width &&
+                    playerX + PLAYER_SIZE > obs.x &&
+                    playerY < obs.y + obs.height &&
+                    playerY + PLAYER_SIZE > obs.y
+                ) {
+                    gameOver();
+                    return; // Stop update on game over
+                }
+
+                // Update score if passed
+                if (!obs.passed && obs.x + obs.width < playerX) {
+                    score++;
+                    scoreElement.textContent = score;
+                    obs.passed = true;
+                }
+
+
+                // Remove off-screen obstacles
+                if (obs.x + obs.width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background elements
+            // Draw ground
+            ctx.fillStyle = '#3a2e2a'; // Brownish color for ground
+            ctx.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, GROUND_HEIGHT);
+            // Add some ground detail (lines)
+            ctx.fillStyle = '#5c4e4a';
+            for(let i = 0; i < canvas.width; i+= 20) {
+                 ctx.fillRect(i, canvas.height - GROUND_HEIGHT + 5, 10, 5);
+            }
+
+
+            // Draw player (Yellow Square 🟨)
+            ctx.fillStyle = '#FFD700'; // Gold color
+            ctx.fillRect(playerX, playerY, PLAYER_SIZE, PLAYER_SIZE);
+
+            // Draw obstacles
+            obstacles.forEach(obs => {
+                ctx.fillStyle = '#FF0000'; // Red color
+                switch (obs.type) {
+                    case 'square': // Square (🟥)
+                        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                        break;
+                    case 'triangle': // Triangle (🔺) pointing up
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x, obs.y + obs.height); // Bottom left
+                        ctx.lineTo(obs.x + obs.width / 2, obs.y); // Top middle
+                        ctx.lineTo(obs.x + obs.width, obs.y + obs.height); // Bottom right
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                    case 'ship': // Ship (🚀)
+                        ctx.font = `${obs.width}px Arial`;
+                        ctx.fillText('🚀', obs.x, obs.y + obs.height);
+                        break;
+                    case 'ball': // Ball (⚽)
+                        ctx.font = `${obs.width}px Arial`;
+                        ctx.fillText('⚽', obs.x, obs.y + obs.height);
+                        break;
+                    case 'ufo': // UFO (🛸)
+                        ctx.font = `${obs.width}px Arial`;
+                        ctx.fillText('🛸', obs.x, obs.y + obs.height);
+                        break;
+                    case 'wave': // Wave (🌊)
+                        ctx.font = `${obs.width}px Arial`;
+                        ctx.fillText('🌊', obs.x, obs.y + obs.height);
+                        break;
+                }
+                 // Add a slight border/highlight for visibility
+                 ctx.strokeStyle = '#A00000';
+                 ctx.lineWidth = 1;
+                 if (obs.type === 'square') {
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                 } else if (obs.type === 'triangle') {
+                     ctx.stroke(); // Stroke the triangle path
+                 }
+            });
+        }
+        }
+
+        function gameOver() {
+            gameState = 'gameOver';
+            messageElement.style.display = 'block';
+            messageElement.innerHTML = `Game Over!<br>Score: ${score}<br>Click or Press Space to Restart`;
+        }
+
+        function gameLoop() {
+            if (gameState === 'playing') {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            } else if (gameState === 'gameOver') {
+                draw(); // Draw the final frame
+                // Stop the loop, wait for restart
+            } else if (gameState === 'start') {
+                 draw(); // Draw the initial state (player on ground)
+                 // Wait for start input
+            }
+        }
+
+        // Event Listeners
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault(); // Prevent scrolling
+                if (gameState === 'playing') {
+                    jump();
+                } else {
+                    startGame();
+                }
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            if (gameState === 'playing') {
+                jump();
+            } else {
+                startGame();
+            }
+        });
+
+         canvas.addEventListener('touchstart', (e) => {
+             e.preventDefault(); // Prevent scrolling/zooming on mobile
+            if (gameState === 'playing') {
+                jump();
+            } else {
+                startGame();
+            }
+        }, { passive: false }); // Need passive: false to allow preventDefault
+
+        // Initial setup
+        resetGame();
+        draw(); // Draw the initial screen
+
+
+    </script>
+</body>
+</html>
