@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>___HENRY X PILLOW: The Game.___</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #222;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            touch-action: none; /* Disable pinch zoom etc. */
+        }
+        #gameScreen {
+            position: relative;
+            width: 100%;
+            max-width: 480px; /* Limit width on larger mobile screens */
+            height: 70%; /* Adjust height */
+            max-height: 800px;
+            background-color: #333;
+            border: 2px solid #fff;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        .gameObject {
+            position: absolute;
+            background-color: red; /* Default color */
+            transition: transform 0.1s linear; /* Smooth movement */
+        }
+        #player {
+            width: 30px;
+            height: 30px;
+            background-color: #00f; /* Blue square for player */
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 5px;
+            text-align: center;
+            line-height: 30px;
+            font-size: 20px;
+        }
+        .enemy {
+            width: 25px;
+            height: 25px;
+            background-color: #f00; /* Red square for enemies */
+            border-radius: 50%;
+             text-align: center;
+            line-height: 25px;
+            font-size: 15px;
+        }
+        .boss {
+             width: 60px;
+            height: 60px;
+            background-color: #ff0; /* Yellow for bosses */
+            border: 2px dashed #f00;
+            border-radius: 10px;
+            text-align: center;
+            line-height: 60px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .projectile {
+            width: 8px;
+            height: 15px;
+            background-color: #0f0; /* Green projectile */
+            border-radius: 2px;
+        }
+        .enemyProjectile {
+            width: 10px;
+            height: 10px;
+            background-color: #ffa500; /* Orange enemy projectile */
+            border-radius: 50%;
+        }
+        .footballCannon {
+            width: 40px;
+            height: 40px;
+            background-color: #8B4513; /* Brown */
+            border: 2px solid #555;
+        }
+        .footballProjectile {
+             width: 20px;
+            height: 20px;
+            background-color: #fff;
+            border: 1px solid #000;
+            border-radius: 50%;
+            font-size: 15px;
+            line-height: 20px;
+            text-align: center;
+        }
+        #controls {
+            width: 100%;
+            max-width: 480px;
+            height: 30%; /* Adjust height */
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #111;
+            padding-top: 10px;
+            box-sizing: border-box;
+        }
+        .controlButton {
+            width: 60px;
+            height: 60px;
+            background-color: #555;
+            color: #fff;
+            border: 2px solid #888;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none; /* Prevent text selection */
+            cursor: pointer;
+        }
+         #actionButton {
+            background-color: #d44;
+        }
+        #benchodButton {
+            background-color: #44d;
+            font-size: 12px; /* Smaller font for longer text */
+            padding: 5px;
+            width: 80px;
+            height: 60px;
+            border-radius: 10px;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            pointer-events: none; /* Allow clicks/touches to pass through */
+        }
+        #healthBar, #bossHealthBar {
+            height: 15px;
+            background-color: #555;
+            border: 1px solid #fff;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #healthFill {
+            width: 100%;
+            height: 100%;
+            background-color: #0f0;
+            transition: width 0.2s linear;
+        }
+        #bossHealthContainer {
+            display: none; /* Hidden by default */
+            text-align: center;
+            width: 150px;
+        }
+        #bossName {
+            font-size: 12px;
+            margin-bottom: 2px;
+        }
+         #bossHealthFill {
+            width: 100%;
+            height: 100%;
+            background-color: #f00;
+            transition: width 0.2s linear;
+        }
+        #messageLog {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            height: 40px;
+            background: rgba(0,0,0,0.5);
+            font-size: 12px;
+            overflow-y: auto;
+            padding: 2px;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+         #dialogueBox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background-color: rgba(0, 0, 0, 0.85);
+            border: 2px solid #fff;
+            padding: 20px;
+            text-align: center;
+            z-index: 100;
+            display: none; /* Hidden by default */
+            border-radius: 10px;
+        }
+        #dialogueText {
+            margin-bottom: 15px;
+        }
+        #dialogueButton {
+            padding: 10px 20px;
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #888;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+         .benchodMessage {
+            position: absolute;
+            color: red;
+            font-weight: bold;
+            font-size: 18px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px;
+            border-radius: 5px;
+            animation: fadeOut 1s forwards;
+            pointer-events: none;
+            z-index: 50;
+        }
+         @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="gameScreen">
+        <div id="player" class="gameObject">🙂</div>
+        <!-- Enemies and Bosses will be added dynamically -->
+        <div id="ui">
+            <div id="playerHealthContainer">
+                Player HP:
+                <div id="healthBar" style="width: 100px;">
+                    <div id="healthFill"></div>
+                </div>
+            </div>
+            <div id="scoreContainer">Score: <span id="score">0</span></div>
+            <div id="bossHealthContainer">
+                <div id="bossName">Boss</div>
+                <div id="bossHealthBar" style="width: 100px;">
+                    <div id="bossHealthFill"></div>
+                </div>
+            </div>
+        </div>
+         <div id="messageLog"></div>
+    </div>
+
+    <div id="controls">
+        <div class="controlButton" id="leftButton">⬅️</div>
+        <div>
+             <div class="controlButton" id="upButton">⬆️</div>
+             <div class="controlButton" id="downButton">⬇️</div>
+        </div>
+        <div class="controlButton" id="rightButton">➡️</div>
+        <div class="controlButton" id="actionButton">💥</div>
+        <div class="controlButton" id="benchodButton">Benchod Gun</div>
+        <div class="controlButton" id="invincibleButton">🛡️</div>
+    </div>
+
+    <div id="dialogueBox">
+        <div id="dialogueText">Dialogue goes here...</div>
+        <button id="dialogueButton">Continue</button>
+    </div>
+
+    <script>
+        const gameScreen = document.getElementById('gameScreen');
+        const player = document.getElementById('player');
+        const controls = document.getElementById('controls');
+        const ui = document.getElementById('ui');
+        const healthFill = document.getElementById('healthFill');
+        const scoreDisplay = document.getElementById('score');
+        const bossHealthContainer = document.getElementById('bossHealthContainer');
+        const bossNameDisplay = document.getElementById('bossName');
+        const bossHealthFill = document.getElementById('bossHealthFill');
+        const messageLog = document.getElementById('messageLog');
+        const dialogueBox = document.getElementById('dialogueBox');
+        const dialogueText = document.getElementById('dialogueText');
+        const dialogueButton = document.getElementById('dialogueButton');
+
+        // --- Game State ---
+        let playerState = {
+            x: gameScreen.offsetWidth / 2 - 15,
+            y: gameScreen.offsetHeight - 40, // Start near bottom
+            width: 30,
+            height: 30,
+            speed: 4,
+            health: 100,
+            maxHealth: 100,
+            score: 0,
+            canUseBenchodGun: false,
+            isInvincible: false,
+        };
+
+        let gameState = {
+            level: 0, // Story progression marker
+            currentBoss: null,
+            enemies: [],
+            projectiles: [],
+            enemyProjectiles: [],
+            footballCannons: [],
+            footballProjectiles: [],
+            gameOver: false,
+            gameWon: false,
+            dialogueActive: false,
+            dialogueQueue: [],
+            clydeResistance: 0, // 0 = no resistance, 1 = some resistance
+            bossActive: false,
+        };
+
+        const bosses = [
+            { name: "Clyde", emoji: "😠", health: 150, maxHealth: 150, attacks: ['shoot'], introDialogue: ["Henry: I want to cuddle pillow.", "Clyde: You WHAT?! You can't do that!", "Henry: Try and stop me!", "Clyde: I WILL!"], outroDialogue: ["Clyde: Agh! You... haven't heard the last of me... *dissipates*", "Henry: ... Pillow, here I come."] },
+            { name: "Meeth", emoji: "🤔", health: 200, maxHealth: 200, attacks: ['spreadShoot'], introDialogue: ["Meeth: Henry? What are you doing?", "Henry: Going to cuddle Pillow. Get out of my way, Meeth.", "Meeth: I can't let you do that. It's... complicated.", "Henry: Then you leave me no choice."], outroDialogue: ["Meeth: *sigh* Fine... Just... be careful, Henry.", "Henry: I will."] },
+            { name: "SC0J", emoji: "❓", health: 100, maxHealth: 100, attacks: ['slowShoot'], introDialogue: ["SC0J: Hold up! Who are you?", "Henry: I'm Henry. I'm on a mission.", "SC0J: A mission? Look, I barely know you, but cuddling Pillow... sounds weird. Maybe rethink it?", "Henry: No rethinking. Move or be moved."], outroDialogue: ["SC0J: Ow! Okay, okay! Just saying, maybe Pillow isn't so bad?", "Henry: ...Maybe.", "(Somewhere, Clyde hears this and grits his teeth...)"] },
+            { name: "Frank", emoji: "😎", health: 250, maxHealth: 250, attacks: ['shoot', 'dash'], introDialogue: ["Frank: Yo Henry! Heard you're causing trouble.", "Henry: Just trying to get to Pillow, Frank.", "Frank: Pillow? Hmm. Let's see if you're serious. Fight me!"], outroDialogue: ["Frank: Alright, alright, you win. Go on."] }, // Placeholder
+            { name: "Admiral", emoji: "⚽", health: 300, maxHealth: 300, attacks: ['footballShoot', 'charge'], introDialogue: ["Admiral: HALT! You trespass on the pitch!", "Henry: Pitch? I just need to get past.", "Admiral: Nonsense! Anyone who challenges the sanctity of football must face me!", "Henry: Uh oh."], outroDialogue: ["Admiral: GOOOOAAAL... for you, I guess. Fine. But watch out for my defensive cannons!"] },
+            { name: "BDYT", emoji: "🚨", health: 280, maxHealth: 280, attacks: ['sirenWave', 'fastShoot'], introDialogue: ["BDYT: WEE WOO WEE WOO! Intruder alert!", "Henry: Just passing through!", "BDYT: Negative! My sirens sing your doom!", "Henry: Great, another weirdo."], outroDialogue: ["BDYT: System... overload... *bzzt*", "Henry: Finally, quiet."] },
+            { name: "Memo", emoji: "📝", health: 320, maxHealth: 320, attacks: ['shoot', 'confuse'], introDialogue: ["Memo: Henry. We need to document this encounter.", "Henry: No time for paperwork, Memo!", "Memo: Protocol dictates a confrontation assessment!", "Henry: Assess this!"], outroDialogue: ["Memo: Assessment complete: Subject is highly determined. Proceed with caution... *vanishes*"] }, // Placeholder
+            { name: "Adam", emoji: "💻", health: 350, maxHealth: 350, attacks: ['glitchShoot', 'teleport'], introDialogue: ["Adam: // Running combat.exe...", "Henry: You're a programmer?", "Adam: Affirmative. Analyzing optimal takedown procedure.", "Henry: Let's debug your code!"], outroDialogue: ["Adam: Error: Player too strong. Shutting down...", "Henry: Phew."] },
+            { name: "HappyMan", emoji: "🐔", health: 400, maxHealth: 400, attacks: ['peckDash', 'eggBomb'], introDialogue: ["HappyMan: Bawk bawk! Nobody gets past the strongest chicken!", "Henry: A... chicken?", "HappyMan: Prepare for a poultry pounding!", "Henry: This is getting ridiculous."], outroDialogue: ["HappyMan: Cluck... cluck... defeated...", "Henry: Okay then."] },
+            { name: "Alan", emoji: "🧐", health: 380, maxHealth: 380, attacks: ['shoot', 'shield'], introDialogue: ["Alan: Stop right there, Henry.", "Henry: Alan? You too?", "Alan: This path is illogical. Pillow is not the objective.", "Henry: My heart says otherwise!"], outroDialogue: ["Alan: Logic error... recalculating... Fine. Your irrationality is... potent."] }, // Placeholder
+            { name: "Dekoder", emoji: "☢️", health: 420, maxHealth: 420, attacks: ['beam', 'fastShoot'], introDialogue: ["Dekoder: Freeman? Wait, you're not Gordon Freeman.", "Henry: I'm Henry!", "Dekoder: Intruder! Prepare for unforeseen consequences!", "Henry: Wrong game, buddy!"], outroDialogue: ["Dekoder: Resonance cascade failure... *fizzles*", "Henry: Half-Life fan, huh."] },
+            { name: "Nagg", emoji: "😒", health: 300, maxHealth: 300, attacks: ['annoyingSound', 'slowShoot'], introDialogue: ["Nagg: Ugh, Henry, seriously? Still going?", "Henry: Yes, Nagg. Almost there.", "Nagg: But whyyyy? It's so pointless. Just stop.", "Henry: Never!"], outroDialogue: ["Nagg: Fine! Whatever! Just go already! So annoying...", "Henry: Finally..."] },
+            { name: "Uami Bosim", emoji: "🤖", health: 500, maxHealth: 500, attacks: ['multiShoot', 'summon'], introDialogue: ["Uami: Unit Henry. Designation: Rogue.", "Henry: Uami? My own creation?", "Uami: Affirmative. Directive: Protect BFCS. Your actions conflict. Prepare for termination.", "Henry: I have to fight my own bot..."], outroDialogue: ["Uami: Critical error... Core programming conflict... Love... protocol... *shuts down*", "Henry: I'm sorry, Uami."] },
+            { name: "Kamran", emoji: "💖", health: 600, maxHealth: 600, attacks: ['finalBeam', 'saveHenry'], introDialogue: ["Kamran: HENRY! STOP!", "Henry: Kamran?! But... why are you here?", "Kamran: This isn't the way! Pillow... It's not what you think! I have to save you... from yourself!", "Henry: Save me? By fighting me?!"], outroDialogue: ["(Final scene - not detailed as requested)"] } // Placeholder for final boss fight logic
+        ];
+
+        let currentBossData = null;
+        let currentBossElement = null;
+        let bossFightTriggered = false;
+
+        const touchState = {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            action: false,
+            benchod: false,
+            actionTap: false, // For single taps
+            benchodTap: false // For single taps
+        };
+        };
+
+        const keyState = {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            action: false,
+            benchod: false,
+        };
+        // --- Logging ---
+        function logMessage(msg) {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            messageLog.appendChild(div);
+            messageLog.scrollTop = messageLog.scrollHeight; // Scroll to bottom
+            // Limit log length
+            if (messageLog.children.length > 10) {
+                messageLog.removeChild(messageLog.firstChild);
+            }
+        }
+
+        // --- Dialogue System ---
+        function showDialogue(lines) {
+            if (lines && lines.length > 0) {
+                gameState.dialogueQueue = lines.slice(); // Copy lines
+                gameState.dialogueActive = true;
+                dialogueText.textContent = gameState.dialogueQueue.shift();
+                dialogueBox.style.display = 'block';
+                // Temporarily disable controls during dialogue
+                Object.keys(touchState).forEach(k => touchState[k] = false);
+            } else {
+                 closeDialogue();
+            }
+        }
+
+         function nextDialogue() {
+            if (gameState.dialogueQueue.length > 0) {
+                dialogueText.textContent = gameState.dialogueQueue.shift();
+            } else {
+                closeDialogue();
+                 // Check if it was boss outro dialogue
+                 if(currentBossData && !gameState.bossActive) {
+                     handleBossDefeatedPostDialogue();
+                 }
+                 // Check if it was intro dialogue
+                 else if (currentBossData && gameState.bossActive && currentBossElement) {
+                    // Start boss fight properly after intro
+                    logMessage(`Boss Fight! ${currentBossData.name}`);
+                 } else {
+                     // Check if tutorial dialogue finished
+                    if (gameState.level === 0) {
+                        gameState.level = 1; // Move past tutorial dialogue
+                        logMessage("Tutorial: Defeat Clyde!");
+                        spawnBoss(); // Start the first boss fight
+                    }
+                 }
+            }
+        }
+
+        function closeDialogue() {
+            gameState.dialogueActive = false;
+            dialogueBox.style.display = 'none';
+        }
+
+        dialogueButton.addEventListener('click', nextDialogue);
+        // Also allow tapping anywhere on the box to continue
+        dialogueBox.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent triggering game actions
+            nextDialogue();
+        });
+
+        // --- Collision Detection ---
+        function checkCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y
+            );
+        }
+
+         // --- Object Creation ---
+        function createGameObject(type, x, y, width, height, color, emoji = '', className = 'gameObject') {
+            const element = document.createElement('div');
+            element.className = className + ' ' + type; // Add type as class
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.style.width = `${width}px`;
+            element.style.height = `${height}px`;
+            element.style.backgroundColor = color;
+            element.textContent = emoji;
+            gameScreen.appendChild(element);
+            return element;
+        }
+
+         function createProjectile(x, y, target = 'enemy') {
+             const speed = 8;
+             const p = {
+                 x: x,
+                 y: y,
+                 width: 8,
+                 height: 15,
+                     damage: 20,
+                 element: createGameObject('projectile', x, y, 8, 15, '#0f0', '', 'gameObject projectile'),
+                 update: function() {
+                     this.y -= speed;
+                     if (this.y < -this.height) {
+                         this.remove();
+                         return false; // Indicate removal
+                     }
+                     this.element.style.top = `${this.y}px`;
+                     return true; // Indicate still active
+                 },
+                 remove: function() {
+                     if (this.element && this.element.parentNode) {
+                         this.element.parentNode.removeChild(this.element);
+                     }
+                 }
+             };
+             gameState.projectiles.push(p);
+         }
+
+         function createBenchodProjectile(x, y) {
+             const speed = 10;
+             const p = {
+                 x: x,
+                 y: y,
+                 width: 10,
+                 height: 10,
+                 isBenchod: true, // Special property
+                 damage: 9999, // One-shot kill damage
+                 element: createGameObject('projectile', x, y, 10, 10, '#44d', '🤬', 'gameObject projectile'),
+                 update: function() {
+                     this.y -= speed;
+                     if (this.y < -this.height) {
+                         this.remove();
+                         return false;
+                     }
+                     this.element.style.top = `${this.y}px`;
+                     return true;
+                 },
+                 remove: function() {
+                      if (this.element && this.element.parentNode) {
+                          this.element.parentNode.removeChild(this.element);
+                      }
+                 }
+             };
+             gameState.projectiles.push(p);
+         }
+
+         function createEnemyProjectile(x, y, dx = 0, dy = 1, speed = 4) {
+             const ep = {
+                 x: x,
+                 y: y,
+                 width: 10,
+                 height: 10,
+                 speed: speed,
+                 dx: dx,
+                 dy: dy,
+                 element: createGameObject('enemyProjectile', x, y, 10, 10, '#ffa500', '', 'gameObject enemyProjectile'),
+                 update: function() {
+                     this.x += this.dx * this.speed;
+                     this.y += this.dy * this.speed;
+                     if (this.y > gameScreen.offsetHeight || this.y < -this.height || this.x < -this.width || this.x > gameScreen.offsetWidth) {
+                         this.remove();
+                         return false;
+                     }
+                     this.element.style.left = `${this.x}px`;
+                     this.element.style.top = `${this.y}px`;
+                     return true;
+                 },
+                 remove: function() {
+                     if (this.element && this.element.parentNode) {
+                         this.element.parentNode.removeChild(this.element);
+                     }
+                 }
+             };
+             gameState.enemyProjectiles.push(ep);
+         }
+
+         function createFootballProjectile(x, y, targetX, targetY) {
+             const speed = 5;
+             const angle = Math.atan2(targetY - y, targetX - x);
+             const dx = Math.cos(angle);
+             const dy = Math.sin(angle);
+
+             const fp = {
+                 x: x,
+                 y: y,
+                 width: 20,
+                 height: 20,
+                 speed: speed,
+                 dx: dx,
+                 dy: dy,
+                 element: createGameObject('footballProjectile', x, y, 20, 20, '#fff', '⚽', 'gameObject footballProjectile'),
+                 update: function() {
+                     this.x += this.dx * this.speed;
+                     this.y += this.dy * this.speed;
+                     if (this.y > gameScreen.offsetHeight || this.y < -this.height || this.x < -this.width || this.x > gameScreen.offsetWidth) {
+                         this.remove();
+                         return false;
+                     }
+                     this.element.style.left = `${this.x}px`;
+                     this.element.style.top = `${this.y}px`;
+                     return true;
+                 },
+                 remove: function() {
+                     if (this.element && this.element.parentNode) {
+                         this.element.parentNode.removeChild(this.element);
+                     }
+                 }
+             };
+             gameState.footballProjectiles.push(fp);
+         }
+
+
+        function createEnemy(x, y, type = 'clyde') {
+             const enemyData = {
+                 clyde: { health: 20 + (gameState.level * 2), speed: 1 + Math.random(), emoji: '😠', width: 25, height: 25, points: 10 },
+                 // Add other enemy types if needed later
+             };
+             const data = enemyData[type];
+             if (!data) return;
+
+             const e = {
+                 x: x,
+                 y: y,
+                 width: data.width,
+                 height: data.height,
+                 health: data.health,
+                 maxHealth: data.health,
+                 speed: data.speed,
+                 points: data.points,
+                 type: type,
+                 element: createGameObject('enemy', x, y, data.width, data.height, '#f00', data.emoji, 'gameObject enemy'),
+                 targetY: playerState.y, // Move towards player's initial y line roughly
+                 directionX: Math.random() < 0.5 ? 1 : -1,
+                 moveTimer: 0,
+                 moveInterval: 100 + Math.random() * 100, // Change direction occasionally
+                 update: function() {
+                     // Simple movement: move down, maybe slightly horizontal
+                     this.y += this.speed * 0.5;
+                     this.x += this.directionX * this.speed * 0.2;
+                     this.moveTimer++;
+
+                     if (this.moveTimer > this.moveInterval) {
+                          this.directionX *= -1;
+                          this.moveTimer = 0;
+                          this.moveInterval = 50 + Math.random() * 50;
+                     }
+
+                     // Boundary check
+                     if (this.x < 0) { this.x = 0; this.directionX = 1;}
+                     if (this.x > gameScreen.offsetWidth - this.width) { this.x = gameScreen.offsetWidth - this.width; this.directionX = -1;}
+
+
+                     if (this.y > gameScreen.offsetHeight) {
+                         this.remove();
+                         return false; // Indicate removal
+                     }
+                     this.element.style.left = `${this.x}px`;
+                     this.element.style.top = `${this.y}px`;
+                     return true;
+                 },
+                 takeDamage: function(amount, isBenchod = false) {
+                     let actualDamage = amount;
+                     if (this.type === 'clyde' && isBenchod) {
+                         logMessage("HIT CLYDE WITH BENCHOD!");
+                         showBenchodMessage(this.x, this.y);
+                         // Apply resistance
+                         if (gameState.clydeResistance > 0) {
+                             logMessage("Clyde resists slightly!");
+                             actualDamage *= (1 - gameState.clydeResistance * 0.5); // e.g., 50% resist at level 1
+                         }
+                          actualDamage *= 5; // Benchod gun is effective!
+                     }
+                     this.health -= actualDamage;
+                     // Visual feedback (e.g., flash red)
+                    this.element.style.filter = 'brightness(2)';
+                    setTimeout(() => {
+                        if (this.element) this.element.style.filter = 'brightness(1)';
+                    }, 100);
+
+                     if (this.health <= 0) {
+                         this.remove();
+                         playerState.score += this.points;
+                         updateUI();
+                         return false; // Indicate removal
+                     }
+                     return true;
+                 },
+                 remove: function() {
+                     if (this.element && this.element.parentNode) {
+                         this.element.parentNode.removeChild(this.element);
+                     }
+                     // Maybe add explosion/death effect later
+                 }
+             };
+             gameState.enemies.push(e);
+         }
+
+        function createFootballCannon(x, y, side = 'left') {
+            const fc = {
+                x: x,
+                y: y,
+                width: 40,
+                height: 40,
+                side: side, // 'left' or 'right'
+                shootCooldown: 0,
+                shootInterval: 150 + Math.random() * 100, // Time between shots (frames)
+                element: createGameObject('footballCannon', x, y, 40, 40, '#8B4513', '🥅', 'gameObject footballCannon'),
+                update: function() {
+                    this.shootCooldown--;
+                    if (this.shootCooldown <= 0) {
+                        // Shoot a football towards the player area
+                        const targetX = playerState.x + playerState.width / 2;
+                        const targetY = playerState.y; // Aim generally at player height
+                        createFootballProjectile(this.x + this.width / 2, this.y + this.height / 2, targetX, targetY);
+                        this.shootCooldown = this.shootInterval;
+                    }
+                     this.element.style.left = `${this.x}px`; // Ensure position is correct if cannons move later
+                     this.element.style.top = `${this.y}px`;
+                    return true; // Cannons persist
+                },
+                remove: function() {
+                    if (this.element && this.element.parentNode) {
+                        this.element.parentNode.removeChild(this.element);
+                    }
+                }
+            };
+            gameState.footballCannons.push(fc);
+        }
+
+
+         function spawnBoss() {
+             if (gameState.level > bosses.length || gameState.bossActive) return; // All bosses defeated or one active
+
+             currentBossData = bosses[gameState.level - 1]; // Level 1 = index 0
+             logMessage(`Approaching ${currentBossData.name}...`);
+             gameState.bossActive = true;
+             bossFightTriggered = true; // Mark that we are in a boss fight process
+
+              // Clear existing enemies for the boss fight
+             clearEnemies();
+             clearProjectiles();
+
+             const bossWidth = 60;
+             const bossHeight = 60;
+             const bossX = gameScreen.offsetWidth / 2 - bossWidth / 2;
+             const bossY = 50;
+
+             currentBossElement = createGameObject('boss', bossX, bossY, bossWidth, bossHeight, '#ff0', currentBossData.emoji, 'gameObject boss');
+             currentBossData.x = bossX;
+             currentBossData.y = bossY;
+             currentBossData.width = bossWidth;
+             currentBossData.height = bossHeight;
+             currentBossData.health = currentBossData.maxHealth; // Reset health
+             currentBossData.moveDirection = 1;
+             currentBossData.shootCooldown = 60; // Initial delay
+             currentBossData.actionTimer = 0;
+
+            // Display boss health bar
+             bossNameDisplay.textContent = currentBossData.name;
+             bossHealthFill.style.width = '100%';
+             bossHealthContainer.style.display = 'block';
+
+             // Show intro dialogue
+             showDialogue(currentBossData.introDialogue);
+             // Note: Actual boss actions start after dialogue closes (in nextDialogue or game loop check)
+         }
+
+        function updateBoss() {
+            if (!gameState.bossActive || !currentBossData || !currentBossElement || gameState.dialogueActive) return;
+
+             // Simple Boss Movement (back and forth)
+             currentBossData.x += 2 * currentBossData.moveDirection;
+             if (currentBossData.x <= 0 || currentBossData.x >= gameScreen.offsetWidth - currentBossData.width) {
+                 currentBossData.moveDirection *= -1;
+             }
+             currentBossElement.style.left = `${currentBossData.x}px`;
+
+             // Boss Actions based on type
+             currentBossData.actionTimer++;
+             currentBossData.shootCooldown--;
+
+             if (currentBossData.shootCooldown <= 0) {
+                 const attackTypes = currentBossData.attacks || ['shoot'];
+                 const attack = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+
+                 switch(attack) {
+                     case 'shoot':
+                         // Shoot towards player
+                         const angle = Math.atan2(playerState.y - (currentBossData.y + currentBossData.height), (playerState.x + playerState.width/2) - (currentBossData.x + currentBossData.width/2));
+                         const dx = Math.cos(angle);
+                         const dy = Math.sin(angle);
+                         createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, dx, dy, 4);
+                         currentBossData.shootCooldown = 60 + Math.random() * 30; // Reset cooldown
+                         break;
+                    case 'spreadShoot':
+                         for (let i = -1; i <= 1; i++) {
+                            const angle = Math.atan2(playerState.y - (currentBossData.y + currentBossData.height), (playerState.x + playerState.width/2) - (currentBossData.x + currentBossData.width/2)) + i * 0.3; // Spread angle
+                            const dx = Math.cos(angle);
+                            const dy = Math.sin(angle);
+                            createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, dx, dy, 3);
+                         }
+                         currentBossData.shootCooldown = 80 + Math.random() * 40;
+                         break;
+                    case 'slowShoot':
+                        createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, 0, 1, 2); // Shoots straight down slowly
+                        currentBossData.shootCooldown = 40 + Math.random() * 20;
+                         break;
+                    case 'dash': // Frank
+                        if (currentBossData.actionTimer % 150 < 10) { // Quick dash
+                             currentBossData.x += (playerState.x > currentBossData.x ? 1 : -1) * 15;
+                        }
+                         currentBossData.shootCooldown = 30; // Can still shoot
+                         break;
+                    case 'footballShoot': // Admiral
+                         createFootballProjectile(currentBossData.x + currentBossData.width / 2, currentBossData.y + currentBossData.height, playerState.x + playerState.width/2, playerState.y);
+                         currentBossData.shootCooldown = 70 + Math.random() * 30;
+                         break;
+                     case 'charge': // Admiral
+                         if (currentBossData.actionTimer % 200 === 0) { // Charge down occasionally
+                            // Simple vertical charge for now
+                            let startY = currentBossData.y;
+                            let chargeInterval = setInterval(() => {
+                                currentBossData.y += 10;
+                                currentBossElement.style.top = `${currentBossData.y}px`;
+                                if (currentBossData.y > gameScreen.offsetHeight) {
+                                    clearInterval(chargeInterval);
+                                    currentBossData.y = startY; // Reset position after charge (simple)
+                                    currentBossElement.style.top = `${currentBossData.y}px`;
+                                }
+                            }, 20);
+                         }
+                         currentBossData.shootCooldown = 40;
+                         break;
+                    case 'sirenWave': // BDYT
+                        // Creates projectiles spreading outwards horizontally
+                        for(let dx of [-1, -0.5, 0.5, 1]) {
+                            createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, dx, 0.5, 3);
+                        }
+                        currentBossData.shootCooldown = 90 + Math.random() * 50;
+                        break;
+                    case 'fastShoot': // BDYT, Dekoder
+                        createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, 0, 1, 6);
+                        currentBossData.shootCooldown = 25 + Math.random() * 15;
+                        break;
+                    case 'confuse': // Memo - Placeholder effect: slightly move player randomly
+                        playerState.x += (Math.random() - 0.5) * 30;
+                        playerState.y += (Math.random() - 0.5) * 10;
+                         clampPlayerPosition();
+                        logMessage("Memo used Confuse!");
+                        currentBossData.shootCooldown = 100;
+                        break;
+                    case 'glitchShoot': // Adam
+                        // Shoot projectiles that change direction slightly
+                        const angle_g = Math.atan2(playerState.y - (currentBossData.y + currentBossData.height), (playerState.x + playerState.width/2) - (currentBossData.x + currentBossData.width/2));
+                        const dx_g = Math.cos(angle_g) + (Math.random() - 0.5) * 0.5;
+                        const dy_g = Math.sin(angle_g) + (Math.random() - 0.5) * 0.5;
+                        createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, dx_g, dy_g, 4);
+                        currentBossData.shootCooldown = 50 + Math.random() * 20;
+                        break;
+                    case 'teleport': // Adam
+                         if (currentBossData.actionTimer % 180 === 0) {
+                             currentBossData.x = Math.random() * (gameScreen.offsetWidth - currentBossData.width);
+                             currentBossElement.style.left = `${currentBossData.x}px`;
+                             logMessage("Adam teleported!");
+                         }
+                         currentBossData.shootCooldown = 20; // Can still shoot often
+                         break;
+                     case 'peckDash': // HappyMan
+                         if (currentBossData.actionTimer % 100 < 15) { // Pecking dash
+                            currentBossData.y += 5; // Move down slightly while dashing
+                             currentBossData.x += (playerState.x > currentBossData.x ? 1 : -1) * 10;
+                            currentBossElement.style.top = `${currentBossData.y}px`;
+                             // Reset Y pos slightly later or if hits boundary
+                            if(currentBossData.y > 150) currentBossData.y = 150;
+                         }
+                         currentBossData.shootCooldown = 50;
+                         break;
+                    case 'eggBomb': // HappyMan
+                        // Drop a projectile straight down
+                         createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, 0, 1, 3);
+                         currentBossData.shootCooldown = 60 + Math.random() * 30;
+                         break;
+                     case 'shield': // Alan - Placeholder: brief invulnerability
+                         if (currentBossData.actionTimer % 250 === 0) {
+                            currentBossElement.style.border = '3px solid cyan';
+                            currentBossData.invulnerable = true;
+                            logMessage("Alan used Shield!");
+                            setTimeout(() => {
+                                if (currentBossData) { // Check if boss still exists
+                                     currentBossElement.style.border = '2px dashed #f00';
+                                     currentBossData.invulnerable = false;
+                                     logMessage("Shield down!");
+                                }
+                            }, 2000); // Shield lasts 2 seconds
+                         }
+                         currentBossData.shootCooldown = 40;
+                         break;
+                     case 'beam': // Dekoder - Placeholder: rapid fire straight down
+                         if (currentBossData.actionTimer % 120 < 30) { // Fire beam for short duration
+                             createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, 0, 1, 7);
+                             currentBossData.shootCooldown = 5; // Rapid fire during beam
+                         } else {
+                             currentBossData.shootCooldown = 90; // Longer cooldown after beam
+                         }
+                         break;
+                     case 'annoyingSound': // Nagg - Placeholder: visual distraction
+                         if (currentBossData.actionTimer % 150 === 0) {
+                             const annoy = createGameObject('annoy', Math.random()* gameScreen.offsetWidth, Math.random() * gameScreen.offsetHeight, 50, 30, 'transparent', 'Ugh!', 'gameObject');
+                             annoy.style.fontSize = '24px';
+                             annoy.style.color = `hsl(${Math.random()*360}, 100%, 70%)`;
+                             annoy.style.animation = 'fadeOut 1.5s forwards';
+                             setTimeout(() => gameScreen.removeChild(annoy), 1500);
+                             logMessage("Nagg is being annoying...");
+                         }
+                         currentBossData.shootCooldown = 70;
+                         break;
+                     case 'multiShoot': // Uami
+                         for (let i = -2; i <= 2; i++) {
+                            const angle = Math.atan2(playerState.y - (currentBossData.y + currentBossData.height), (playerState.x + playerState.width/2) - (currentBossData.x + currentBossData.width/2)) + i * 0.2; // Wider Spread angle
+                            const dx = Math.cos(angle);
+                            const dy = Math.sin(angle);
+                            createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 5, currentBossData.y + currentBossData.height, dx, dy, 4);
+                         }
+                         currentBossData.shootCooldown = 100 + Math.random() * 40;
+                         break;
+                     case 'summon': // Uami - Summon basic Clyde enemies
+                         if (currentBossData.actionTimer % 200 === 0 && gameState.enemies.length < 3) { // Limit summons
+                             createEnemy(Math.random() * (gameScreen.offsetWidth - 25), 10, 'clyde');
+                             logMessage("Uami summoned backup!");
+                         }
+                         currentBossData.shootCooldown = 60;
+                         break;
+                     case 'finalBeam': // Kamran
+                         // Similar to Dekoder's beam but maybe wider/faster?
+                         if (currentBossData.actionTimer % 150 < 40) {
+                             createEnemyProjectile(currentBossData.x + currentBossData.width / 2 - 10, currentBossData.y + currentBossData.height, -0.1, 1, 8);
+                             createEnemyProjectile(currentBossData.x + currentBossData.width / 2, currentBossData.y + currentBossData.height, 0.1, 1, 8);
+                             currentBossData.shootCooldown = 4;
+                         } else {
+                             currentBossData.shootCooldown = 100;
+                         }
+                         break;
+                     case 'saveHenry': // Kamran - Special attack (maybe heals player slightly or damages self?) - Placeholder
+                         if (currentBossData.actionTimer % 300 === 0) {
+                             logMessage("Kamran hesitates... 'Henry!'");
+                            // Maybe a different effect needed here based on final fight design
+                         }
+                         currentBossData.shootCooldown = 50;
+                         break;
+                 }
+             }
+         }
+
+
+         function takeBossDamage(amount, isBenchod = false) {
+            if (!gameState.bossActive || !currentBossData || currentBossData.invulnerable) return;
+
+            let actualDamage = amount;
+            if (currentBossData.name === "Clyde" && isBenchod) {
+                logMessage("BENCHOD HIT ON BOSS CLYDE!");
+                showBenchodMessage(currentBossData.x, currentBossData.y);
+                actualDamage *= (3 - gameState.clydeResistance * 2); // Still effective, but less so with resistance
+                 if (actualDamage < amount * 0.5) actualDamage = amount * 0.5; // Minimum effectiveness
+            }
+
+            currentBossData.health -= actualDamage;
+            const healthPercent = Math.max(0, (currentBossData.health / currentBossData.maxHealth) * 100);
+            bossHealthFill.style.width = `${healthPercent}%`;
+
+            // Visual feedback
+            currentBossElement.style.filter = 'brightness(2)';
+            setTimeout(() => {
+                if (currentBossElement) currentBossElement.style.filter = 'brightness(1)';
+            }, 100);
+
+
+            if (currentBossData.health <= 0) {
+                 handleBossDefeat();
+            }
+        }
+
+        function handleBossDefeat() {
+             logMessage(`${currentBossData.name} defeated!`);
+             playerState.score += (currentBossData.maxHealth); // Score for defeating boss
+             gameState.bossActive = false; // Mark boss as inactive BEFORE showing dialogue
+             bossHealthContainer.style.display = 'none';
+             if (currentBossElement && currentBossElement.parentNode) {
+                 currentBossElement.parentNode.removeChild(currentBossElement);
+             }
+             currentBossElement = null;
+
+             // Clear remaining projectiles from this boss maybe?
+             // clearProjectiles(true); // Clear only enemy projectiles
+
+             // Show outro dialogue - the continuation logic is handled in nextDialogue
+             showDialogue(currentBossData.outroDialogue);
+             // Specific post-boss logic moved to handleBossDefeatedPostDialogue
+        }
+
+        function handleBossDefeatedPostDialogue() {
+            if (!currentBossData) return; // Should not happen, but safety check
+
+             // Specific consequences after certain bosses
+             if (currentBossData.name === "Clyde") {
+                 logMessage("Remnants of Clyde now roam...");
+                 playerState.canUseBenchodGun = true; // Unlock Benchod Gun
+                 document.getElementById('benchodButton').style.display = 'flex'; // Show the button
+             } else if (currentBossData.name === "SC0J") {
+                 logMessage("Clyde feels a flicker of doubt... and gains resistance!");
+                 gameState.clydeResistance = 1;
+             } else if (currentBossData.name === "Admiral") {
+                 logMessage("Football Cannons deployed!");
+                 // Spawn cannons on the sides
+                 createFootballCannon(10, 100, 'left');
+                 createFootballCannon(gameScreen.offsetWidth - 50, 100, 'right');
+                 createFootballCannon(10, 250, 'left');
+                 createFootballCannon(gameScreen.offsetWidth - 50, 250, 'right');
+             } else if (currentBossData.name === "Kamran") {
+                 // Final Boss Defeated
+                 gameWon();
+                 return; // Stop further progression
+             }
+
+
+             // General progression
+             gameState.level++; // Move to next stage/boss level
+             currentBossData = null; // Clear current boss data fully
+             bossFightTriggered = false; // Reset boss trigger
+             logMessage(`Level ${gameState.level}. Score: ${playerState.score}`);
+             updateUI();
+
+             // Decide whether to spawn next boss immediately or after some enemies
+             if (gameState.level <= bosses.length) {
+                 // Spawn some regular enemies before the next boss appears
+                 startSpawningEnemies();
+             } else if (!gameState.gameWon) {
+                 // This case should be handled by Kamran's defeat check
+                 // gameWon(); // All bosses defeated
+             }
+        }
+
+
+        function clearEnemies() {
+            gameState.enemies.forEach(e => e.remove());
+            gameState.enemies = [];
+        }
+        function clearProjectiles(onlyEnemy = false) {
+            if (!onlyEnemy) {
+                gameState.projectiles.forEach(p => p.remove());
+                gameState.projectiles = [];
+            }
+            gameState.enemyProjectiles.forEach(ep => ep.remove());
+            gameState.enemyProjectiles = [];
+            gameState.footballProjectiles.forEach(fp => fp.remove());
+            gameState.footballProjectiles = [];
+        }
+        function clearCannons() {
+            gameState.footballCannons.forEach(fc => fc.remove());
+            gameState.footballCannons = [];
+        }
+
+        // --- Spawning Regular Enemies ---
+        let enemySpawnTimer = 0;
+        let enemySpawnInterval = 120; // Frames between spawns
+        let enemiesToSpawnBeforeBoss = 5; // How many enemies before next boss triggers
+        let enemiesSpawnedThisLevel = 0;
+        let spawningEnabled = false;
+
+        function startSpawningEnemies() {
+             enemiesSpawnedThisLevel = 0;
+             enemiesToSpawnBeforeBoss = 5 + gameState.level; // Increase enemies between bosses
+             enemySpawnInterval = Math.max(30, 120 - gameState.level * 5); // Spawn faster later
+             spawningEnabled = true;
+        }
+
+        function stopSpawningEnemies() {
+            spawningEnabled = false;
+        }
+
+        function updateEnemySpawning() {
+            if (!spawningEnabled || gameState.bossActive || gameState.dialogueActive) return;
+
+            enemySpawnTimer++;
+            if (enemySpawnTimer >= enemySpawnInterval) {
+                enemySpawnTimer = 0;
+
+                // Check if boss should trigger
+                if (!bossFightTriggered && enemiesSpawnedThisLevel >= enemiesToSpawnBeforeBoss && gameState.level <= bosses.length) {
+                     stopSpawningEnemies();
+                     spawnBoss();
+                 } else {
+                     // Spawn a regular enemy (mostly Clydes for now)
+                     const spawnX = Math.random() * (gameScreen.offsetWidth - 30);
+                     createEnemy(spawnX, -30, 'clyde'); // Start off-screen top
+                     enemiesSpawnedThisLevel++;
+                 }
+            }
+        }
+
+
+         // --- Player Actions ---
+         function shoot() {
+             // No cooldown
+             // Create a projectile slightly above the player
+             createProjectile(playerState.x + playerState.width / 2 - 4, playerState.y - 15);
+         }
+
+         function useBenchodGun() {
+            if (playerState.canUseBenchodGun) { // Only check for gun availability now
+                // Create a special projectile
+                createBenchodProjectile(playerState.x + playerState.width / 2 - 5, playerState.y - 10);
+                logMessage("Fired Benchod Gun!");
+            } else if (!playerState.canUseBenchodGun) {
+                logMessage("Benchod Gun not available yet!");
+            } else {
+                 // logMessage("Benchod Gun reloading..."); // Maybe too spammy
+            }
+         }
+
+         function showBenchodMessage(x, y) {
+             const msgElement = document.createElement('div');
+             msgElement.textContent = "BENCHOD";
+             msgElement.className = 'benchodMessage';
+             msgElement.style.left = `${x}px`;
+             msgElement.style.top = `${y - 20}px`; // Position above the hit target
+             gameScreen.appendChild(msgElement);
+
+             // Clean up the message element after animation
+             setTimeout(() => {
+                 if (msgElement.parentNode) {
+                     msgElement.parentNode.removeChild(msgElement);
+                 }
+             }, 1000); // Match animation duration
+         }
+
+
+         function takeDamage(amount) {
+             if (playerState.isInvincible) {
+                 return; // Player is invincible, do no damage
+             }
+             // Player is now invincible by default - health never decreases
+             // Player is now invincible by default - health never decreases
+             // playerState.health -= amount; // Removed to make player invincible
+             // playerState.health = playerState.maxHealth; // Keep health at max
+
+             // Flash player or screen red - visual feedback of "hit" but no damage
+             player.style.backgroundColor = '#f00';
+             setTimeout(() => player.style.backgroundColor = '#00f', 100);
+
+             // No game over condition as player is invincible
+             // if (playerState.health <= 0) {
+             //     gameOver();
+             // }
+         }
+
+         // --- UI Update ---
+         function updateUI() {
+             healthFill.style.width = `${(playerState.health / playerState.maxHealth) * 100}%`;
+             scoreDisplay.textContent = playerState.score;
+         }
+
+         // --- Game Over / Win ---
+         function gameOver() {
+             if (gameState.gameOver) return;
+             logMessage("Game Over!");
+             gameState.gameOver = true;
+             // Stop game loop? Show message?
+             clearInterval(gameLoopInterval); // Stop the loop
+             showDialogue(["Game Over!", `Final Score: ${playerState.score}`]);
+             // Disable controls visually maybe
+             document.getElementById('controls').style.opacity = '0.5';
+             document.getElementById('controls').style.pointerEvents = 'none';
+         }
+        function gameWon() {
+             if (gameState.gameWon) return;
+            logMessage("YOU WON! Henry reached Pillow!"); // Or whatever the ending implies
+            gameState.gameWon = true;
+            clearInterval(gameLoopInterval);
+            showDialogue(["Congratulations!", "*** HENRY X PILLOW ***", `Final Score: ${playerState.score}`]);
+             document.getElementById('controls').style.opacity = '0.5';
+             document.getElementById('controls').style.pointerEvents = 'none';
+        }
+
+        // --- Input Handling (Touch) ---
+        function handleTouchStart(event) {
+             event.preventDefault(); // Prevent scrolling/zooming
+             if (gameState.dialogueActive || gameState.gameOver || gameState.gameWon) return;
+
+            const touches = event.changedTouches;
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                if (!targetElement) continue;
+
+                 // Check specific buttons first
+                 if (targetElement.id === 'leftButton') touchState.left = true;
+                 else if (targetElement.id === 'rightButton') touchState.right = true;
+                 else if (targetElement.id === 'upButton') touchState.up = true;
+                 else if (targetElement.id === 'downButton') touchState.down = true;
+                 else if (targetElement.id === 'actionButton') {
+                     touchState.action = true;
+                     touchState.actionTap = true; // Register tap for single shot
+                 } else if (targetElement.id === 'benchodButton') {
+                     touchState.benchod = true;
+                     touchState.benchodTap = true; // Register tap for single shot
+                 } else if (targetElement.id === 'invincibleButton') {
+                    playerState.isInvincible = !playerState.isInvincible; // Toggle invincibility
+                    logMessage(playerState.isInvincible ? "Invincible Mode: ON" : "Invincible Mode: OFF");
+                 }
+            }
+        }
+
+        function handleTouchEnd(event) {
+            event.preventDefault();
+             if (gameState.dialogueActive || gameState.gameOver || gameState.gameWon) return;
+
+            const touches = event.changedTouches;
+             for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                // Need to check which button was RELEASED. Since elementFromPoint won't work reliably on touchend,
+                // we check the touch identifier or simply reset based on common button areas.
+                // A simpler approach for this game: reset the state based on the *initial* target.
+                // We can also just iterate through all possible targets and see if any *active* touch ended near them.
+                // For simplicity here, let's reset the state based on the ID if possible, otherwise infer.
+
+                // This is imperfect, ideally map touch IDs to buttons on touchstart.
+                 // Let's just reset all button states if *any* touch ends over the control area.
+                 const touchY = touch.clientY;
+                 const controlsRect = controls.getBoundingClientRect();
+                 if (touchY >= controlsRect.top) {
+                    // Crude check if touch ended in control area
+                    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); // Check element *under* finger at end
+
+                    // Reset button state IF the touch truly ended on it or nearby
+                    // This logic is tricky without tracking touch IDs. Simple reset:
+                     if (touchState.left) touchState.left = false;
+                     if (touchState.right) touchState.right = false;
+                     if (touchState.up) touchState.up = false;
+                     if (touchState.down) touchState.down = false;
+                     if (touchState.action) touchState.action = false;
+                     if (touchState.benchod) touchState.benchod = false;
+                 }
+            }
+            // If no touches remain active on controls, ensure all states are false
+            if (event.touches.length === 0) {
+                Object.keys(touchState).forEach(k => { if(typeof touchState[k] === 'boolean') touchState[k] = false; });
+            }
+        }
+        }
+
+        function handleTouchMove(event) {
+            event.preventDefault();
+             if (gameState.dialogueActive || gameState.gameOver || gameState.gameWon) return;
+            // Optional: Update movement/button state if finger slides over a different button
+            // For simplicity, we rely on touchstart/touchend for button presses.
+        }
+
+        // --- Input Handling (Keyboard) ---
+        function handleKeyDown(event) {
+            if (gameState.dialogueActive || gameState.gameOver || gameState.gameWon) return;
+            switch (event.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    keyState.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    keyState.right = true;
+                    break;
+                case 'ArrowUp':
+                case 'w':
+                    keyState.up = true;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    keyState.down = true;
+                    break;
+                case ' ': // Spacebar for action
+                case 'j':
+                    keyState.action = true;
+                    break;
+                case 'k': // 'k' for benchod gun
+                    keyState.benchod = true;
+                    break;
+                case 'i': // 'i' for invincibility toggle
+                    playerState.isInvincible = !playerState.isInvincible;
+                    logMessage(playerState.isInvincible ? "Invincible Mode: ON" : "Invincible Mode: OFF");
+                    break;
+            }
+        }
+
+        function handleKeyUp(event) {
+            switch (event.key) {
+                case 'ArrowLeft':
+                case 'a':
+                    keyState.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    keyState.right = false;
+                    break;
+                case 'ArrowUp':
+                case 'w':
+                    keyState.up = false;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    keyState.down = false;
+                    break;
+                case ' ': // Spacebar for action
+                case 'j':
+                    keyState.action = false;
+                    break;
+                case 'k': // 'k' for benchod gun
+                    keyState.benchod = false;
+                    break;
+            }
+        }
+
+
+        // Attach touch listeners
+        controls.addEventListener('touchstart', handleTouchStart, { passive: false });
+        controls.addEventListener('touchend', handleTouchEnd, { passive: false });
+        controls.addEventListener('touchcancel', handleTouchEnd, { passive: false }); // Handle interruption
+        controls.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+        // Attach keyboard listeners
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+
+
+        // Keep player within bounds
+        function clampPlayerPosition() {
+             if (playerState.x < 0) playerState.x = 0;
+             if (playerState.x > gameScreen.offsetWidth - playerState.width) playerState.x = gameScreen.offsetWidth - playerState.width;
+             if (playerState.y < 0) playerState.y = 0;
+             if (playerState.y > gameScreen.offsetHeight - playerState.height) playerState.y = gameScreen.offsetHeight - playerState.height;
+        }
+
+        // --- Game Loop ---
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            if (gameState.gameOver || gameState.gameWon) return;
+
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Update cooldowns (adjust based on deltaTime if needed, simple frame count here)
+
+
+            // Handle Input
+            if (!gameState.dialogueActive) {
+                if (touchState.left || keyState.left) playerState.x -= playerState.speed;
+                if (touchState.right || keyState.right) playerState.x += playerState.speed;
+                if (touchState.up || keyState.up) playerState.y -= playerState.speed;
+                if (touchState.down || keyState.down) playerState.y += playerState.speed;
+
+                clampPlayerPosition();
+
+                // Use tap state for single shots, hold state can be added if needed
+                if (touchState.actionTap || keyState.action) {
+                    shoot();
+                    touchState.actionTap = false; // Consume the tap
+                    keyState.action = false; // Consume the key press
+                }
+                 if (touchState.benchodTap || keyState.benchod) {
+                    useBenchodGun();
+                    touchState.benchodTap = false; // Consume the tap
+                    keyState.benchod = false; // Consume the key press
+                }
+            }
+
+            // Update Player position
+            player.style.left = `${playerState.x}px`;
+            player.style.top = `${playerState.y}px`;
+
+             // Update Projectiles
+             gameState.projectiles = gameState.projectiles.filter(p => p.update());
+
+             // Update Enemy Projectiles
+             gameState.enemyProjectiles = gameState.enemyProjectiles.filter(ep => ep.update());
+
+             // Update Football Projectiles
+             gameState.footballProjectiles = gameState.footballProjectiles.filter(fp => fp.update());
+
+             // Update Enemies
+             gameState.enemies = gameState.enemies.filter(e => e.update());
+
+             // Update Boss
+             updateBoss();
+
+             // Update Cannons
+             gameState.footballCannons.forEach(fc => fc.update());
+
+            // --- Collision Detection ---
+             const playerRect = { x: playerState.x, y: playerState.y, width: playerState.width, height: playerState.height };
+
+            // Projectiles vs Enemies
+             gameState.projectiles.forEach(p => {
+                 const projectileRect = { x: p.x, y: p.y, width: p.width, height: p.height };
+                 let hit = false;
+
+                 // Check collision with boss first
+                 if (gameState.bossActive && currentBossData) {
+                     const bossRect = { x: currentBossData.x, y: currentBossData.y, width: currentBossData.width, height: currentBossData.height };
+                     if (checkCollision(projectileRect, bossRect)) {
+                         takeBossDamage(p.damage, p.isBenchod); // Use projectile damage value
+                         p.remove();
+                         hit = true;
+                     }
+                 }
+
+                 // Check collision with regular enemies if no boss hit
+                 if (!hit) {
+                     gameState.enemies.forEach(e => {
+                         const enemyRect = { x: e.x, y: e.y, width: e.width, height: e.height };
+                         if (checkCollision(projectileRect, enemyRect)) {
+                             const enemySurvived = e.takeDamage(p.damage, p.isBenchod); // Use projectile damage value
+                             p.remove();
+                             hit = true;
+                              if (!enemySurvived) {
+                                 // Find and remove enemy from array if takeDamage returned false
+                                gameState.enemies = gameState.enemies.filter(enemy => enemy !== e);
+                             }
+                         }
+                     });
+                 }
+                 // If projectile hit something, mark it for removal outside the loop iteration
+                 if(hit) p.hitRegistered = true;
+             });
+            // Filter out projectiles that hit
+            gameState.projectiles = gameState.projectiles.filter(p => !p.hitRegistered && p.element.parentNode);
+
+
+            // Enemy Projectiles vs Player
+            [...gameState.enemyProjectiles, ...gameState.footballProjectiles].forEach(ep => {
+                 const projectileRect = { x: ep.x, y: ep.y, width: ep.width, height: ep.height };
+                 if (checkCollision(projectileRect, playerRect)) {
+                     takeDamage(10); // Base damage 10 from enemy shots
+                     ep.remove();
+                     ep.hitRegistered = true;
+                 }
+             });
+             gameState.enemyProjectiles = gameState.enemyProjectiles.filter(ep => !ep.hitRegistered && ep.element.parentNode);
+             gameState.footballProjectiles = gameState.footballProjectiles.filter(fp => !fp.hitRegistered && fp.element.parentNode);
+
+
+             // Enemies vs Player
+             gameState.enemies.forEach(e => {
+                 const enemyRect = { x: e.x, y: e.y, width: e.width, height: e.height };
+                 if (checkCollision(enemyRect, playerRect)) {
+                     takeDamage(5); // Collision damage
+                     // Optional: Push enemy back slightly? Damage enemy too?
+                     e.remove(); // Remove enemy on collision for simplicity
+                     gameState.enemies = gameState.enemies.filter(enemy => enemy !== e);
+                 }
+             });
+
+             // Boss vs Player Collision
+             if (gameState.bossActive && currentBossData) {
+                 const bossRect = { x: currentBossData.x, y: currentBossData.y, width: currentBossData.width, height: currentBossData.height };
+                 if (checkCollision(bossRect, playerRect)) {
+                      takeDamage(20); // Boss collision damage higher
+                      // Optional: Push player back
+                     playerState.y += 20;
+                     clampPlayerPosition();
+                 }
+             }
+
+
+            // Update enemy spawning logic
+            updateEnemySpawning();
+
+            // Request next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+         // --- Initialization ---
+         function initGame() {
+            logMessage("___HENRY X PILLOW: The Game.___");
+            playerState.x = gameScreen.offsetWidth / 2 - playerState.width / 2;
+            playerState.y = gameScreen.offsetHeight - playerState.height - 10;
+            player.style.left = `${playerState.x}px`;
+            player.style.top = `${playerState.y}px`;
+            updateUI();
+
+            document.getElementById('benchodButton').style.display = 'none'; // Hide until unlocked
+
+            // Start with initial dialogue
+            showDialogue(bosses[0].introDialogue);
+            // Game starts properly after dialogue closes (level becomes 1, boss spawns)
+
+             requestAnimationFrame(gameLoop); // Start the main game loop
+        }
+
+             requestAnimationFrame(gameLoop); // Start the main game loop
+        }
+
+        // Ensure the game screen dimensions are somewhat stable
+        function resizeGameScreen() {
+            // We mostly rely on CSS percentages, but might need JS adjustments if layout breaks badly
+             playerState.x = Math.max(0, Math.min(gameScreen.offsetWidth - playerState.width, playerState.x));
+             playerState.y = Math.max(0, Math.min(gameScreen.offsetHeight - playerState.height, playerState.y));
+        }
+
+        window.addEventListener('resize', resizeGameScreen);
+        window.addEventListener('orientationchange', resizeGameScreen);
+
+
+        // Start the game when the DOM is ready
+initGame();
+    </script>
+</body>
+</html>
